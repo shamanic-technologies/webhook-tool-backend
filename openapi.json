@@ -1,0 +1,386 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Webhook Store API",
+    "version": "0.1.0",
+    "description": "API for managing webhook definitions, linking them to users/agents, and handling secret validation.",
+    "license": {
+      "name": "MIT",
+      "url": "https://github.com/blooming-generation/webhook-store/blob/main/LICENSE"
+    }
+  },
+  "servers": [
+    {
+      "url": "http://localhost:4000/api/v1",
+      "description": "Local development server"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Webhooks",
+      "description": "Operations related to webhook definitions and linking"
+    }
+  ],
+  "paths": {
+    "/webhooks": {
+      "post": {
+        "tags": ["Webhooks"],
+        "summary": "Create a new webhook definition",
+        "description": "Registers a new type of webhook that can be linked to users.",
+        "operationId": "createWebhook",
+        "security": [
+          { "PlatformAuth": [] } 
+        ],
+        "requestBody": {
+          "description": "Webhook definition data",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WebhookData"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Webhook created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessWebhookResponse"
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      }
+    },
+    "/webhooks/search": {
+      "post": {
+        "tags": ["Webhooks"],
+        "summary": "Search for webhooks",
+        "description": "Searches for existing webhook definitions using a text query (currently uses placeholder embeddings).",
+        "operationId": "searchWebhooks",
+        "security": [
+          { "PlatformAuth": [] }
+        ],
+        "requestBody": {
+          "description": "Search parameters",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "query": { "type": "string", "example": "gmail" },
+                  "limit": { "type": "integer", "format": "int32", "default": 10, "minimum": 1 }
+                },
+                "required": ["query"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Search results",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessWebhookListResponse"
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      }
+    },
+    "/webhooks/{webhookId}/link-user": {
+      "post": {
+        "tags": ["Webhooks"],
+        "summary": "Link a webhook to a user",
+        "description": "Links a specific webhook definition to the authenticated client user. Checks for required secrets in Google Secret Manager and returns setup instructions if needed.",
+        "operationId": "linkUserToWebhook",
+        "security": [
+          { "PlatformClientAuth": [] } 
+        ],
+        "parameters": [
+          {
+            "name": "webhookId",
+            "in": "path",
+            "required": true,
+            "description": "ID of the webhook definition to link",
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Webhook linked successfully OR setup is required.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    { "$ref": "#/components/schemas/SuccessUserWebhookResponse" },
+                    { "$ref": "#/components/schemas/SuccessWebhookSetupNeededResponse" }
+                  ]
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "Webhook linked successfully for the first time.",
+            "content": {
+              "application/json": {
+                "schema": {
+                   "$ref": "#/components/schemas/SuccessUserWebhookResponse"
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      }
+    },
+    "/webhooks/{webhookId}/link-agent": {
+      "post": {
+        "tags": ["Webhooks"],
+        "summary": "Link an agent to a user's webhook",
+        "description": "Links an agent to an active webhook configuration already linked to the authenticated client user.",
+        "operationId": "linkAgentToWebhook",
+        "security": [
+          { "PlatformClientAuth": [] } 
+        ],
+        "parameters": [
+          {
+            "name": "webhookId",
+            "in": "path",
+            "required": true,
+            "description": "ID of the webhook definition",
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "requestBody": {
+          "description": "Agent linking data",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "agentId": { "type": "string", "description": "ID of the agent to link" }
+                },
+                "required": ["agentId"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Agent linked successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessWebhookAgentLinkResponse"
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" }, 
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "404": { "$ref": "#/components/responses/NotFound" }, 
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "success": { "type": "boolean", "enum": [false] },
+          "error": { "type": "string", "description": "A high-level error category (e.g., 'Validation Error', 'Not Found')" },
+          "message": { "type": "string", "description": "A human-readable error message" },
+          "details": { "type": "string", "description": "Optional technical details or breakdown", "nullable": true }
+        },
+        "required": ["success", "error", "message"]
+      },
+      "WebhookData": {
+        "type": "object",
+        "description": "Data required to create a new webhook definition.",
+        "properties": {
+          "name": { "type": "string", "example": "Gmail Handler" },
+          "description": { "type": "string", "example": "Processes new emails" },
+          "webhookProviderId": { "type": "string", "description": "Identifier for the provider (e.g., GMAIL)" },
+          "subscribedEventId": { "type": "string", "description": "Provider-specific event ID", "example": "new_email" },
+          "requiredSecrets": { "type": "array", "items": { "type": "string" }, "description": "List of secret types needed (from UtilitySecretType)", "example": ["GMAIL_API_CREDENTIALS", "action_confirmation"] },
+          "userIdentificationMapping": { "type": "object", "additionalProperties": { "type": "string" }, "description": "Mapping of required secret types to user identification field names within the payload schema.", "example": { "GMAIL_API_CREDENTIALS": "userId", "action_confirmation": "WEBHOOK_URL_INPUTED" } },
+          "eventPayloadSchema": { "type": "object", "description": "JSON schema defining the expected payload for this webhook event." }
+        },
+        "required": [
+          "name", "description", "webhookProviderId", "subscribedEventId", "requiredSecrets", "userIdentificationMapping", "eventPayloadSchema"
+        ]
+      },
+      "Webhook": {
+        "allOf": [
+          { "$ref": "#/components/schemas/WebhookData" },
+          {
+            "type": "object",
+            "properties": {
+              "id": { "type": "string", "format": "uuid", "description": "Unique identifier for the webhook definition" }
+            },
+            "required": ["id"]
+          }
+        ]
+      },
+      "UserWebhook": {
+        "type": "object",
+        "description": "Represents an active link between a user and a webhook.",
+        "properties": {
+           "webhookId": { "type": "string", "format": "uuid" },
+           "clientUserId": { "type": "string" },
+           "status": { "type": "string", "enum": ["active", "pending", "inactive"] },
+           "createdAt": { "type": "string", "format": "date-time" }
+           
+        },
+        "required": ["webhookId", "clientUserId", "status", "createdAt"]
+      },
+      "SetupAction": {
+          "type": "object",
+          "description": "Describes a setup step required before activation.",
+          "properties": {
+              "type": { "type": "string", "description": "The type of secret or action required (e.g., google_oauth, action_confirmation, specific secret type)" },
+              "key": { "type": "string", "description": "A key identifying the specific action or secret (e.g., WEBHOOK_URL_INPUTED)" },
+              "description": { "type": "string", "description": "Human-readable instructions" },
+              "valueType": { "type": "string", "description": "Expected data type for the secret/confirmation (e.g., string, boolean)" }
+          },
+          "required": ["type", "key", "description", "valueType"]
+      },
+      "WebhookSetupNeeded": {
+          "type": "object",
+          "description": "Details required setup actions for a webhook link.",
+          "properties": {
+            "needsSetup": { 
+              "type": "array", 
+              "items": { "$ref": "#/components/schemas/SetupAction" } 
+            },
+            "webhookProviderId": { "type": "string", "description": "Identifier for the provider (e.g., GMAIL)" },
+            "webhookUrlToInput": { "type": "string", "format": "uri", "description": "The specific URL the user needs to configure in the provider's system." }
+          },
+          "required": ["needsSetup", "webhookProviderId", "webhookUrlToInput"]
+      },
+      "WebhookAgentLink": {
+        "type": "object",
+        "description": "Represents a link between an agent and an active user-webhook.",
+        "properties": {
+          
+          "clientUserId": { "type": "string" },
+          "agentId": { "type": "string" }
+          
+        },
+        "required": ["clientUserId", "agentId"]
+      },
+      
+      "SuccessWebhookResponse": {
+        "type": "object",
+        "properties": {
+          "success": { "type": "boolean", "enum": [true] },
+          "data": { "$ref": "#/components/schemas/Webhook" }
+        },
+        "required": ["success", "data"]
+      },
+       "SuccessWebhookListResponse": {
+        "type": "object",
+        "properties": {
+          "success": { "type": "boolean", "enum": [true] },
+          "data": { "type": "array", "items": { "$ref": "#/components/schemas/Webhook" } }
+        },
+        "required": ["success", "data"]
+      },
+      "SuccessUserWebhookResponse": {
+        "type": "object",
+        "properties": {
+          "success": { "type": "boolean", "enum": [true] },
+          "data": { "$ref": "#/components/schemas/UserWebhook" }
+        },
+        "required": ["success", "data"]
+      },
+      "SuccessWebhookSetupNeededResponse": {
+        "type": "object",
+        "description": "Indicates setup is needed, returned when success=true.",
+        "properties": {
+          "success": { "type": "boolean", "enum": [true] },
+          "data": { "$ref": "#/components/schemas/WebhookSetupNeeded" }
+        },
+        "required": ["success", "data"]
+      },
+      "SuccessWebhookAgentLinkResponse": {
+        "type": "object",
+        "properties": {
+          "success": { "type": "boolean", "enum": [true] },
+          "data": { "$ref": "#/components/schemas/WebhookAgentLink" }
+        },
+        "required": ["success", "data"]
+      }
+    },
+    "responses": {
+      "BadRequest": {
+        "description": "Bad Request - Invalid input, validation error.",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+          }
+        }
+      },
+      "Unauthorized": {
+        "description": "Unauthorized - Missing or invalid authentication headers.",
+         "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+          }
+        }
+      },
+      "NotFound": {
+        "description": "Not Found - Requested resource (e.g., webhook) does not exist.",
+         "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+          }
+        }
+      },
+      "InternalServerError": {
+        "description": "Internal Server Error - An unexpected error occurred.",
+         "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+          }
+        }
+      }
+    },
+    "securitySchemes": {
+      "PlatformAuth": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-platform-api-key",
+        "description": "Requires platform API key and platform user ID headers."
+        
+      },
+       "PlatformClientAuth": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-platform-api-key", 
+        "description": "Requires platform API key, platform user ID, and client user ID headers."
+        
+      }
+    }
+  }
+} 
