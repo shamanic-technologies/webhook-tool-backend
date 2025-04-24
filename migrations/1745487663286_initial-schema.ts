@@ -97,12 +97,11 @@ export async function up(pgm: MigrationBuilder): Promise<void> {
     pgm.addIndex('user_webhooks', 'client_user_id');
     pgm.sql(CREATE_UPDATE_TRIGGER('user_webhooks'));
 
-    // webhook_agent_links table
+    // webhook_agent_links table (without webhook_provider_id)
     pgm.createTable('webhook_agent_links', {
         webhook_id: { type: 'uuid', notNull: true },
         client_user_id: { type: 'varchar(255)', notNull: true },
         agent_id: { type: 'varchar(255)', notNull: true },
-        webhook_provider_id: { type: 'varchar(100)', notNull: true },
         created_at: {
             type: 'timestamptz',
             notNull: true,
@@ -128,6 +127,7 @@ export async function up(pgm: MigrationBuilder): Promise<void> {
 export async function down(pgm: MigrationBuilder): Promise<void> {
     // Drop tables in reverse order of creation, handling dependencies
     pgm.dropConstraint('webhook_agent_links', 'webhook_agent_links_fk_user_webhook');
+    pgm.dropConstraint('webhook_agent_links', 'webhook_agent_links_pkey');
     pgm.dropTable('webhook_agent_links');
 
     pgm.dropConstraint('user_webhooks', 'user_webhooks_pkey');

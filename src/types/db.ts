@@ -39,7 +39,6 @@ export interface UserWebhookRecord {
     status: WebhookStatus; // e.g., 'pending', 'active'
     created_at: Date;
     updated_at: Date;
-    // Primary key would likely be a composite key (webhook_id, client_user_id)
 }
 
 /**
@@ -48,10 +47,11 @@ export interface UserWebhookRecord {
  */
 export interface WebhookAgentLinkRecord {
     webhook_id: string; // Foreign key to webhooks.id
-    client_user_id: string; // Foreign key to user_webhooks
     agent_id: string; // Identifier for the agent
-    webhook_provider_id: string; // Added to match WebhookAgentLink type and migration
+    client_user_id: string; // Identifier for the user in the client's system
     created_at: Date;
+    // client_user_id: string; // Foreign key to user_webhooks
+    // webhook_provider_id: string; // Added to match WebhookAgentLink type and migration
     // Primary key would likely be a composite key (webhook_id, client_user_id, agent_id)
     // or have a unique constraint on (webhook_id, client_user_id)
 } 

@@ -139,8 +139,6 @@ Authentication: Requires `x-platform-api-key` and `x-platform-user-id` headers o
 
 Contributions are welcome! Please feel free to open an issue or submit a pull request.
 
-(Add more detailed contribution guidelines as needed)
-
 ## License
 
 [MIT](LICENSE)

@@ -9,7 +9,6 @@ import {
     ServiceResponse,
     SuccessResponse,
     ErrorResponse,
-    WebhookSetupNeeded,
     UserType,
     WebhookStatus,
     UtilitySecretType,
@@ -21,14 +20,18 @@ import {
     createWebhook as createWebhookService,
     getWebhookById as getWebhookByIdService,
     searchWebhooks as searchWebhooksService,
+    mapWebhookRecordToWebhook,
+} from '../services/webhookDefinitionService.js';
+import {
     createUserWebhook as createUserWebhookService,
     updateUserWebhookStatus as updateUserWebhookStatusService,
-    linkAgentToWebhook as linkAgentToWebhookService,
     findUserWebhook as findUserWebhookService,
-    mapWebhookRecordToWebhook,
     mapUserWebhookRecordToUserWebhook,
-    mapWebhookAgentLinkRecordToWebhookAgentLink
-} from '../services/webhookService.js';
+} from '../services/userWebhookLinkService.js';
+import {
+    linkAgentToWebhook as linkAgentToWebhookService,
+    mapWebhookAgentLinkRecordToWebhookAgentLink,
+} from '../services/agentWebhookLinkService.js';
 import { checkSecretExistsGsm, getSecretGsm } from '../lib/gsm.js';
 import {
     CreateWebhookSchema,
