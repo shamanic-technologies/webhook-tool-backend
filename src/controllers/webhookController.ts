@@ -15,7 +15,9 @@ import {
     UtilityProvider,
     UserWebhook,
     WebhookAgentLink,
-    WebhookSetupNeeded
+    WebhookSetupNeeded,
+    UtilityInputSecret,
+    UtilityActionConfirmation
 } from '@agent-base/types';
 import {
     createWebhook as createWebhookService,
@@ -43,6 +45,7 @@ import {
 } from '../lib/schemas.js';
 import { AuthenticatedRequest } from '../middleware/auth.js';
 import { ZodError } from 'zod';
+import { validate as uuidValidate } from 'uuid'; // Import the validate function
 
 // Placeholder for embedding generation
 async function generateEmbedding(text: string): Promise<number[]> {
@@ -140,6 +143,9 @@ export const linkUserController = async (
     res: Response<ServiceResponse<UserWebhook | WebhookSetupNeeded>>, 
     next: NextFunction
 ) => {
+    // ---- Add log here ----
+    console.log(`>>> Entering linkUserController for webhookId: ${req.params?.webhookId}, clientUserId: ${req.serviceCredentials?.clientUserId}`);
+    // ---------------------
     try {
         const paramsValidation = WebhookIdParamsSchema.safeParse(req.params);
         if (!paramsValidation.success) {
@@ -161,97 +167,106 @@ export const linkUserController = async (
             return res.status(404).json({ success: false, error: 'Not Found', message: 'Webhook not found.' });
         }
         const webhook = mapWebhookRecordToWebhook(webhookRecord);
+        console.log('DEBUG: Webhook:', JSON.stringify(webhook));
 
         let userWebhookRecord = await findUserWebhookService(webhookId, clientUserId);
+        console.log('DEBUG: User Webhook Record:', JSON.stringify(userWebhookRecord));
         
         // Define the structure for setup actions based on SetupNeeded type
-        type SetupAction = {
-            type: UtilitySecretType | string; 
-            key: string; 
-            description: string; 
-            valueType: string; 
-        };
-        let needsSetupActions: SetupAction[] = []; // Collect setup actions
+        // Separate lists for different types of setup actions
+        let missingInputs: UtilityInputSecret[] = [];
+        let missingConfirmations: UtilityActionConfirmation[] = [];
+        
         let currentStatus = userWebhookRecord?.status ?? WebhookStatus.PENDING;
         const isNewLink = !userWebhookRecord;
-
+        console.log('DEBUG: Is New Link:', isNewLink);
         if (isNewLink) {
              userWebhookRecord = await createUserWebhookService(webhookId, clientUserId, WebhookStatus.PENDING);
         }
 
         const webhookUrlToInput = `${process.env.WEBHOOK_URL || 'YOUR_BASE_WEBHOOK_URL'}/${webhook.webhookProviderId}/${webhook.subscribedEventId}`;
-        const confirmationSecretType = 'action_confirmation'; // Use string value for type
-        const confirmationSecretKey = 'WEBHOOK_URL_INPUTED';   // Key for this specific confirmation
-        const confirmationSecretDbType = 'WEBHOOK_URL_INPUTED' as UtilitySecretType; // Type used for DB/GSM lookup
-
+        // const confirmationSecretType = 'action_confirmation'; // Use string value for type
+        const confirmationSecretDbType = UtilityActionConfirmation.WEBHOOK_URL_INPUTED; // Type used for DB/GSM lookup
+        console.log('DEBUG: Confirmation Secret DB Type:', confirmationSecretDbType);
         // Check confirmation secret
         const confirmationCheck = await getSecretGsm(UserType.Client, clientUserId, webhook.webhookProviderId, confirmationSecretDbType);
+        console.log('DEBUG: Confirmation Check:', JSON.stringify(confirmationCheck));
         let isConfirmed = false;
-        if (confirmationCheck.success && typeof confirmationCheck.data.value === 'boolean' && confirmationCheck.data.value === true) {
+        if (confirmationCheck.success &&confirmationCheck.data.value === 'true') {
             isConfirmed = true;
         }
         
         if (!isConfirmed) {
-            needsSetupActions.push({
-                type: confirmationSecretType, 
-                key: confirmationSecretKey,
-                description: `Please confirm you have configured the webhook URL in the ${webhook.webhookProviderId} provider dashboard: ${webhookUrlToInput} (Store boolean secret '${confirmationSecretDbType}' as true via secret store endpoint)`,
-                valueType: 'boolean'
-            });
+            // Add the specific confirmation enum value to the list
+            missingConfirmations.push(UtilityActionConfirmation.WEBHOOK_URL_INPUTED);
+            // We might still want to keep the description for the overall message, but not directly in the array
+            // Consider adding details to the message/title/description fields of SetupNeeded later
         }
-        
+        console.log('DEBUG: Missing Confirmations:', missingConfirmations);
+        console.log('DEBUG: Required Secrets:', webhook.requiredSecrets);
         // Check other required secrets
         for (const secretType of webhook.requiredSecrets) {
             // Skip the explicit confirmation secret type, handled above
-            if (secretType === confirmationSecretDbType) {
+            // Ensure comparison is with the enum value
+            if (secretType === UtilityActionConfirmation.WEBHOOK_URL_INPUTED) {
                 continue;
             }
 
             const gsmCheck = await checkSecretExistsGsm(UserType.Client, clientUserId, webhook.webhookProviderId, secretType);
-            
+            console.log('DEBUG: GSM Check:', JSON.stringify(gsmCheck));
             if (!gsmCheck.success) {
                  console.error(`GSM check failed for ${secretType}: ${gsmCheck.error}`);
-                 needsSetupActions.push({ 
-                     type: secretType, 
-                     key: secretType, // Use secret type as key
-                     description: `Failed to check required secret: ${secretType}. Error: ${gsmCheck.error}`,
-                     valueType: 'unknown' // Or determine based on type?
-                 });
-                 continue;
+                 // Decide how to handle GSM check failures - potentially add to a separate error list or message
+                 // For now, we might need to signal an error state or add a generic message
+                 // Pushing the enum value might not be appropriate if the check *failed* vs secret *not existing*
+                 // Let's skip adding to missingInputs for now if the check itself failed, but log it.
+                 // Consider adding a specific error message to the final SetupNeeded object.
+                 continue; 
             }
 
             if (!gsmCheck.data.exists) {
-                 needsSetupActions.push({ 
-                     type: secretType,
-                     key: secretType, // Use secret type as key
-                     description: `Missing required secret: ${secretType}. Please store this secret.`,
-                     valueType: 'string' // Assume string? Determine based on type?
-                 });
+                 // Add the specific secret enum value to the list
+                 // Ensure secretType is actually a UtilityInputSecret before pushing
+                 // We might need a type guard or check, but given the context, 
+                 // requiredSecrets *should* contain UtilityInputSecret types here.
+                 // Assuming secretType is a valid UtilityInputSecret enum member
+                 if (Object.values(UtilityInputSecret).includes(secretType as UtilityInputSecret)) {
+                    missingInputs.push(secretType as UtilityInputSecret);
+                 } else {
+                    console.warn(`Secret type '${secretType}' is required but not a recognized UtilityInputSecret enum member.`);
+                    // Handle unexpected secret types if necessary
+                 }
             }
         }
 
         // Determine response based on setup actions
-        if (needsSetupActions.length > 0) {
+        // Check if either list has items
+        if (missingInputs.length > 0 || missingConfirmations.length > 0) {
             if (currentStatus === WebhookStatus.ACTIVE) {
                 userWebhookRecord = await updateUserWebhookStatusService(webhookId, clientUserId, WebhookStatus.PENDING);
                 currentStatus = WebhookStatus.PENDING;
             }
-
-            // Construct the WebhookSetupNeeded object for the data payload
+            console.log('DEBUG: Current Status:', currentStatus);
+            // Construct the WebhookSetupNeeded object correctly
             const setupNeededData: WebhookSetupNeeded = {
-                // @ts-ignore - Bypassing persistent incorrect linter error
-                needsSetup: needsSetupActions,
+                needsSetup: true, // Set to literal true
+                title: `Webhook Setup Required for ${webhook.name}`,
+                message: `Additional setup is needed to activate the ${webhook.webhookProviderId} webhook.`,
+                description: `Please provide the missing secrets and/or confirm actions listed below. The webhook URL to configure in the provider is: ${webhookUrlToInput}`,
                 webhookProviderId: webhook.webhookProviderId,
-                webhookUrlToInput: webhookUrlToInput
+                webhookUrlToInput: webhookUrlToInput, // Keep this top-level field for now
+                // Add the arrays if they are not empty
+                ...(missingInputs.length > 0 && { requiredSecretInputs: missingInputs }),
+                ...(missingConfirmations.length > 0 && { requiredActionConfirmations: missingConfirmations })
             };
-
+            console.log('DEBUG: Setup Needed Data:', JSON.stringify(setupNeededData));
             // Return SuccessResponse<WebhookSetupNeeded>
             const response: SuccessResponse<WebhookSetupNeeded> = {
-                success: true, // Set success to true
+                success: true, 
                 data: setupNeededData
             };
             // Explicitly cast to the overall expected response type union
-            return res.status(200).json(response as ServiceResponse<UserWebhook | WebhookSetupNeeded>);
+            return res.status(200).json(response);
 
         } else {
             // All secrets/confirmations exist. Activate if PENDING.
@@ -259,8 +274,18 @@ export const linkUserController = async (
                  userWebhookRecord = await updateUserWebhookStatusService(webhookId, clientUserId, WebhookStatus.ACTIVE);
             }
 
+            // ---- START DEBUG LOGS ----
+            console.log('DEBUG: Record before mapping:', JSON.stringify(userWebhookRecord)); 
+            console.log('DEBUG: Type of created_at before mapping:', typeof userWebhookRecord?.created_at);
+            // ---- END DEBUG LOGS ----
+
             // Return SuccessResponse<UserWebhook>
-            const userWebhook = mapUserWebhookRecordToUserWebhook(userWebhookRecord!);
+            const userWebhook = mapUserWebhookRecordToUserWebhook(userWebhookRecord!); // Non-null assertion used!
+            
+            // ---- START DEBUG LOGS ----
+            console.log('DEBUG: Mapped object:', JSON.stringify(userWebhook)); 
+            // ---- END DEBUG LOGS ----
+            
             const response: SuccessResponse<UserWebhook> = { success: true, data: userWebhook };
             // Explicitly cast to the overall expected response type union
             return res.status(isNewLink ? 201 : 200).json(response as ServiceResponse<UserWebhook | WebhookSetupNeeded>);
@@ -288,6 +313,18 @@ export const linkAgentController = async (req: AuthenticatedRequest, res: Respon
              return res.status(400).json(formatValidationError(bodyValidation.error));
         }
         const { agentId } = bodyValidation.data;
+
+        // --- Add UUID validation for agentId using the uuid library ---
+        if (!uuidValidate(agentId)) { // Use uuid's validate function
+            console.error(`[Controller Error] Link Agent: Invalid agentId format: ${agentId}`);
+            return res.status(400).json({
+                success: false,
+                error: 'Validation Error',
+                message: 'Invalid agentId format.',
+                details: 'The provided agentId does not match the expected UUID format (e.g., xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx).'
+            });
+        }
+        // --- End UUID validation ---
 
         const clientUserId = req.serviceCredentials?.clientUserId;
         if (!clientUserId) {

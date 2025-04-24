@@ -249,10 +249,10 @@
            "webhookId": { "type": "string", "format": "uuid" },
            "clientUserId": { "type": "string" },
            "status": { "type": "string", "enum": ["active", "pending", "inactive"] },
-           "createdAt": { "type": "string", "format": "date-time" }
+           "createdAt": { "type": "string", "format": "date-time", "nullable": true }
            
         },
-        "required": ["webhookId", "clientUserId", "status", "createdAt"]
+        "required": ["webhookId", "clientUserId", "status"]
       },
       "SetupAction": {
           "type": "object",
