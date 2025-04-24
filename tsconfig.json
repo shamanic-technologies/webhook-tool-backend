@@ -1,0 +1,24 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",                      /* Set the JavaScript language version for emitted JavaScript and include compatible library declarations. */
+    "module": "NodeNext",                     /* Specify what module code is generated. */
+    "moduleResolution": "NodeNext",           /* Specify how TypeScript looks up a file from a given module specifier. */
+    "esModuleInterop": true,                  /* Emit additional JavaScript to ease support for importing CommonJS modules. This enables 'allowSyntheticDefaultImports' for type compatibility. */
+    "forceConsistentCasingInFileNames": true, /* Ensure that casing is correct in imports. */
+    "strict": true,                           /* Enable all strict type-checking options. */
+    "skipLibCheck": true,                     /* Skip type checking all .d.ts files. */
+    "outDir": "./dist",                       /* Specify an output folder for all emitted files. */
+    "rootDir": "./src",                       /* Specify the root directory of input files. */
+    "declaration": true,                      /* Generates corresponding '.d.ts' file. */
+    "sourceMap": true,                        /* Generates corresponding '.map' file. */
+    "resolveJsonModule": true               /* Include modules imported with '.json' extension */
+
+    /* Other recommended options */
+    // "noUnusedLocals": true,                /* Enable error reporting when local variables aren't read. */
+    // "noUnusedParameters": true,            /* Raise an error when a function parameter isn't read. */
+    // "noImplicitReturns": true,             /* Enable error reporting for codepaths that do not explicitly return in a function. */
+    // "noFallthroughCasesInSwitch": true,    /* Enable error reporting for fallthrough cases in switch statements. */
+  },
+  "include": ["src/**/*.ts"],              /* Specifies the files that are included in the program. */
+  "exclude": ["node_modules", "dist", "**/*.test.ts"] /* Specifies the files that are excluded from the program. */
+} 
