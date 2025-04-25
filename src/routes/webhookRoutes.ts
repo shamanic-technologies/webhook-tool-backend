@@ -4,45 +4,28 @@
  * Defines the Express routes for the webhook store API.
  */
 import { Router } from 'express';
-import {
-    createWebhookController,
-    searchWebhooksController,
-    linkUserController,
-    linkAgentController,
-} from '../controllers/webhookController.js';
+// Import controllers from their individual files
+import { createWebhookController } from '../controllers/createWebhookController.js';
+import { searchWebhooksController } from '../controllers/searchWebhooksController.js';
+import { linkUserController } from '../controllers/linkUserController.js';
+import { linkAgentController } from '../controllers/linkAgentController.js';
+import { resolveWebhookController } from '../controllers/resolveWebhookController.js';
 import { authMiddleware } from '../middleware/auth.js';
 
 const router: Router = Router();
 
-// Apply auth middleware to all webhook routes
-router.use(authMiddleware);
+// Routes requiring standard user/service authentication
+const authenticatedRouter = Router();
+authenticatedRouter.use(authMiddleware);
 
-/**
- * @route   POST /api/v1/webhooks
- * @desc    Create a new webhook definition
- * @access  Authenticated
- */
-router.post('/', createWebhookController);
+authenticatedRouter.post('/', createWebhookController);
+authenticatedRouter.post('/search', searchWebhooksController);
+authenticatedRouter.post('/:webhookId/link-user', linkUserController);
+authenticatedRouter.post('/:webhookId/link-agent', linkAgentController);
 
-/**
- * @route   POST /api/v1/webhooks/search
- * @desc    Search for webhooks using vector similarity
- * @access  Authenticated
- */
-router.post('/search', searchWebhooksController);
+router.use('/', authenticatedRouter); // Mount authenticated routes
 
-/**
- * @route   POST /api/v1/webhooks/:webhookId/link-user
- * @desc    Link a webhook to the authenticated client user, checks/requests setup
- * @access  Authenticated (requires x-client-user-id header)
- */
-router.post('/:webhookId/link-user', linkUserController);
-
-/**
- * @route   POST /api/v1/webhooks/:webhookId/link-agent
- * @desc    Link an active user-webhook connection to an agent
- * @access  Authenticated (requires x-client-user-id header)
- */
-router.post('/:webhookId/link-agent', linkAgentController);
+// Route for internal gateway service to resolve incoming webhooks
+router.post('/resolve/:webhookProviderId/:subscribedEventId', resolveWebhookController);
 
 export default router; 

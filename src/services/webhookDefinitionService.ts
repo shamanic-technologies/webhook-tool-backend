@@ -6,7 +6,7 @@
  */
 import { query } from '../lib/db.js';
 import { WebhookRecord } from '../types/db.js';
-import { WebhookData, Webhook } from '@agent-base/types';
+import { WebhookData, Webhook, WebhookProviderId, UtilitySecretType } from '@agent-base/types';
 import pgvector from 'pgvector/pg'; // Import for vector type usage
 import { v4 as uuidv4 } from 'uuid'; // For generating webhook IDs
 
@@ -18,44 +18,59 @@ import { v4 as uuidv4 } from 'uuid'; // For generating webhook IDs
  * @returns The newly created WebhookRecord.
  * @throws Error if database insertion fails.
  */
-export const createWebhook = async (webhookData: WebhookData, embedding?: number[]): Promise<WebhookRecord> => {
-  const newId = uuidv4();
-  const { 
-    name, 
-    description, 
-    webhookProviderId, 
-    subscribedEventId, 
-    requiredSecrets, 
-    userIdentificationMapping, 
-    eventPayloadSchema 
-  } = webhookData;
-
-  // Convert arrays/objects to JSON strings for PG
-  const requiredSecretsJson = JSON.stringify(requiredSecrets);
-  const userIdentificationMappingJson = JSON.stringify(userIdentificationMapping);
-  const eventPayloadSchemaJson = JSON.stringify(eventPayloadSchema);
-  const embeddingSql = embedding ? pgvector.toSql(embedding) : null;
-
-  const sql = `
-    INSERT INTO webhooks (id, name, description, webhook_provider_id, subscribed_event_id, required_secrets, user_identification_mapping, event_payload_schema, embedding, created_at, updated_at)
-    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW(), NOW())
-    RETURNING *;
-  `;
-
-  try {
-    const result = await query<WebhookRecord>(sql, [
-      newId, name, description, webhookProviderId, subscribedEventId,
-      requiredSecretsJson, userIdentificationMappingJson, eventPayloadSchemaJson, embeddingSql
-    ]);
-    if (result.rows.length === 0) {
-      throw new Error("Webhook creation failed, no record returned.");
+export const createWebhookService = async (
+    webhookData: WebhookData, // Uses application-level type
+    embedding: number[]
+): Promise<WebhookRecord> => {
+    const newId = uuidv4(); // Use a different variable name than the type
+    const {
+      name, 
+      description, 
+      webhookProviderId, 
+      subscribedEventId, 
+      requiredSecrets, 
+      clientUserIdentificationMapping, // Correct app-level name
+      conversationIdIdentificationMapping, // Correct app-level name
+      eventPayloadSchema 
+    } = webhookData;
+  
+    // Convert arrays/objects to JSON strings for PG
+    const requiredSecretsJson = JSON.stringify(requiredSecrets);
+    const clientMappingJson = JSON.stringify(clientUserIdentificationMapping);
+    // conversationIdIdentificationMapping is already a string
+    const eventPayloadSchemaJson = JSON.stringify(eventPayloadSchema);
+    const embeddingSql = embedding ? pgvector.toSql(embedding) : null;
+  
+    const sql = `
+      INSERT INTO webhooks (
+        id, name, description, webhook_provider_id, subscribed_event_id, 
+        required_secrets, 
+        client_user_identification_mapping, -- Correct DB column
+        conversation_id_identification_mapping, -- Correct DB column
+        event_payload_schema, 
+        embedding, created_at, updated_at
+      )
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW(), NOW())
+      RETURNING *;
+    `;
+    try {
+      const result = await query<WebhookRecord>(sql, [
+        newId, name, description, webhookProviderId, subscribedEventId,
+        requiredSecretsJson, 
+        clientMappingJson, // Pass JSON string for JSONB column
+        conversationIdIdentificationMapping, // Pass string directly for TEXT column
+        eventPayloadSchemaJson, 
+        embeddingSql
+      ]);
+      if (result.rows.length === 0) {
+        throw new Error("Failed to create webhook definition, INSERT query returned no rows.");
+      }
+      return result.rows[0];
+    } catch (err) {
+      console.error("Error creating webhook definition:", err);
+      throw new Error(`Database error creating webhook definition: ${err instanceof Error ? err.message : String(err)}`);
     }
-    return result.rows[0];
-  } catch (err) {
-    console.error("Error creating webhook:", err);
-    throw new Error(`Database error during webhook creation: ${err instanceof Error ? err.message : String(err)}`);
-  }
-};
+  };
 
 /**
  * Retrieves a webhook definition by its ID.
@@ -111,35 +126,79 @@ export const searchWebhooks = async (queryVector: number[], limit: number): Prom
 };
 
 /**
+ * Finds a webhook definition by its provider ID and subscribed event ID.
+ *
+ * @param webhookProviderId The provider identifier (as string from URL).
+ * @param subscribedEventId The unique event ID associated with the webhook URL.
+ * @returns The WebhookRecord or null if not found.
+ */
+export const getWebhookByProviderAndEvent = async (
+    webhookProviderId: string,
+    subscribedEventId: string
+): Promise<WebhookRecord | null> => {
+    const sql = `
+        SELECT * 
+        FROM webhooks 
+        WHERE webhook_provider_id = $1 AND subscribed_event_id = $2
+    `;
+    try {
+        const result = await query<WebhookRecord>(sql, [webhookProviderId, subscribedEventId]);
+        return result.rows.length > 0 ? result.rows[0] : null;
+    } catch (err) {
+        console.error("Error finding webhook by provider and event ID:", err);
+        throw new Error(`Database error finding webhook definition: ${err instanceof Error ? err.message : String(err)}`);
+    }
+};
+
+/**
  * Helper to convert DB record to application-level Webhook type.
- * Parses JSON fields.
+ * Assumes JSON fields are parsed correctly by the DB driver or need parsing here.
  */
 export const mapWebhookRecordToWebhook = (record: WebhookRecord): Webhook => {
+    // Attempt to parse JSON fields, handle potential errors or assume driver handles it
+    let requiredSecrets: UtilitySecretType[];
+    let clientUserIdentificationMapping: Record<UtilitySecretType, string>;
+    let eventPayloadSchema: Record<string, unknown>;
+
     try {
-      return {
-          id: record.id,
-          name: record.name,
-          description: record.description,
-          webhookProviderId: record.webhook_provider_id,
-          subscribedEventId: record.subscribed_event_id,
-          // Safely parse JSON, handling potential errors if data is not valid JSON
-          requiredSecrets: typeof record.required_secrets === 'string' ? JSON.parse(record.required_secrets) : (record.required_secrets || []),
-          userIdentificationMapping: typeof record.user_identification_mapping === 'string' ? JSON.parse(record.user_identification_mapping) : (record.user_identification_mapping || {}),
-          eventPayloadSchema: typeof record.event_payload_schema === 'string' ? JSON.parse(record.event_payload_schema) : (record.event_payload_schema || {}),
-      };
-    } catch (parseError) {
-        console.error(`Error parsing JSON fields for webhook ${record.id}:`, parseError);
-        // Return a potentially partial object or throw an error, depending on requirements
-        // Returning partial object here to avoid crashing entirely if one record is bad
-         return {
-            id: record.id,
-            name: record.name,
-            description: record.description,
-            webhookProviderId: record.webhook_provider_id,
-            subscribedEventId: record.subscribed_event_id,
-            requiredSecrets: [],
-            userIdentificationMapping: {},
-            eventPayloadSchema: {},
-        } as Webhook; // Cast needed as it might not fully conform
+        requiredSecrets = typeof record.required_secrets === 'string' 
+            ? JSON.parse(record.required_secrets) 
+            : record.required_secrets; // Assuming driver parses JSONB to object/array
+    } catch (e) {
+        console.error(`Error parsing required_secrets for webhook ${record.id}:`, e);
+        requiredSecrets = []; // Default to empty array on error
     }
+
+    try {
+        // Use correct snake_case DB column name
+        clientUserIdentificationMapping = typeof record.client_user_identification_mapping === 'string' 
+            ? JSON.parse(record.client_user_identification_mapping) 
+            : record.client_user_identification_mapping;
+    } catch (e) {
+        console.error(`Error parsing client_user_identification_mapping for webhook ${record.id}:`, e);
+        clientUserIdentificationMapping = {}; // Default to empty object on error
+    }
+
+    try {
+        eventPayloadSchema = typeof record.event_payload_schema === 'string' 
+            ? JSON.parse(record.event_payload_schema) 
+            : record.event_payload_schema;
+    } catch (e) {
+        console.error(`Error parsing event_payload_schema for webhook ${record.id}:`, e);
+        eventPayloadSchema = {}; // Default to empty object on error
+    }
+
+    return {
+        id: record.id,
+        name: record.name,
+        description: record.description,
+        webhookProviderId: record.webhook_provider_id,
+        subscribedEventId: record.subscribed_event_id,
+        requiredSecrets: requiredSecrets,
+        // Use correct application-level field name
+        clientUserIdentificationMapping: clientUserIdentificationMapping,
+        // Use correct application-level field name (maps from correct DB column)
+        conversationIdIdentificationMapping: record.conversation_id_identification_mapping,
+        eventPayloadSchema: eventPayloadSchema,
+    };
 }; 

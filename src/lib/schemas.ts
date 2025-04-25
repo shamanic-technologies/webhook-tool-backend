@@ -5,6 +5,7 @@
  * and potentially query strings for the webhook store API.
  */
 import { z } from 'zod';
+import { UtilityInputSecret } from '@agent-base/types'; // Import the enum
 // We assume UtilityProvider and UtilitySecretType are string enums or types
 // Using z.string() for broader compatibility, add specific z.enum if runtime enums are guaranteed
 // import { UtilityProvider, UtilitySecretType } from '@agent-base/types'; // Keep import for reference
@@ -22,10 +23,20 @@ export const CreateWebhookSchema = z.object({
   subscribedEventId: z.string().min(1, { message: "Subscribed event ID is required" }),
   // Use z.string() - refine with z.enum if UtilitySecretType enum object is available at runtime
   requiredSecrets: z.array(z.string()).min(0), // Can be empty array
-  // Use z.string() for keys - refine with z.enum if UtilitySecretType enum object is available at runtime
-  userIdentificationMapping: z.record(z.string(), z.string(), {
-    invalid_type_error: "userIdentificationMapping must be an object mapping secret type string to string"
+  // Renamed from userIdentificationMapping
+  clientUserIdentificationMapping: z.record(z.string(), z.string(), {
+    invalid_type_error: "clientUserIdentificationMapping must be an object mapping secret type string to string"
+  })
+  // Add refinement to check keys against UtilityInputSecret enum values
+  .refine(mapping => {
+      const allowedKeys = Object.values(UtilityInputSecret);
+      return Object.keys(mapping).every(key => allowedKeys.includes(key as UtilityInputSecret));
+    }, {
+      message: `Keys in clientUserIdentificationMapping must be valid UtilityInputSecret values (e.g., ${Object.values(UtilityInputSecret).join(', ')})`,
+      path: ['clientUserIdentificationMapping'] // Specify the path of the error
   }),
+  // Added conversationIdIdentificationMapping
+  conversationIdIdentificationMapping: z.string().min(1, { message: "conversationIdIdentificationMapping is required" }),
   eventPayloadSchema: z.record(z.string(), z.unknown(), {
     invalid_type_error: "eventPayloadSchema must be an object"
   }),

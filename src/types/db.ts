@@ -21,9 +21,9 @@ export interface WebhookRecord {
     webhook_provider_id: WebhookProviderId;
     subscribed_event_id: string;
     required_secrets: UtilitySecretType[]; // Stored as JSONB or TEXT[] in PG
-    user_identification_mapping: Record<UtilitySecretType, string>; // Stored as JSONB in PG
+    client_user_identification_mapping: Record<UtilitySecretType, string>; // Added (Stored as JSONB in PG)
+    conversation_id_identification_mapping: string; // Added (Stored as TEXT in PG)
     event_payload_schema: Record<string, unknown>; // Stored as JSONB in PG
-    // Add embedding field for pgvector - type depends on generation
     embedding?: number[]; // Assuming numeric vector, adjust if needed
     created_at: Date;
     updated_at: Date;
@@ -36,7 +36,9 @@ export interface WebhookRecord {
 export interface UserWebhookRecord {
     webhook_id: string; // Foreign key to webhooks.id
     client_user_id: string; // Identifier for the user in the client's system
+    platform_user_id: string; // Added platform user ID
     status: WebhookStatus; // e.g., 'pending', 'active'
+    client_user_identification_hash: string | null; // Added hash field (snake_case, nullable)
     created_at: Date;
     updated_at: Date;
 }
@@ -47,8 +49,9 @@ export interface UserWebhookRecord {
  */
 export interface WebhookAgentLinkRecord {
     webhook_id: string; // Foreign key to webhooks.id
-    agent_id: string; // Identifier for the agent
     client_user_id: string; // Identifier for the user in the client's system
+    platform_user_id: string; // Added platform user ID
+    agent_id: string; // Identifier for the agent
     created_at: Date;
     // client_user_id: string; // Foreign key to user_webhooks
     // webhook_provider_id: string; // Added to match WebhookAgentLink type and migration
