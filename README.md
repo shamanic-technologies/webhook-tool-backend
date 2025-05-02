@@ -117,9 +117,10 @@ This service is designed to work with the `@agent-base/types` and `@agent-base/a
 Base URL: `/api/v1/webhooks` (except for `/health`)
 
 Authentication: 
-*   Most routes under `/api/v1/webhooks` require `X-Platform-Api-Key` and `X-Platform-User-Id` headers.
-*   `link-user` and `link-agent` additionally require `X-Client-User-Id` for identifying the user link.
-*   `resolve` requires `X-Platform-Api-Key` and `X-Platform-User-Id`.
+*   All routes (except `/health`) require an API key provided in the `Authorization` header as a Bearer token.
+*   Include the header in your requests like this: `Authorization: Bearer YOUR_WEBHOOK_STORE_API_KEY`
+*   Replace `YOUR_WEBHOOK_STORE_API_KEY` with the value of the `WEBHOOK_STORE_API_KEY` environment variable.
+*   The previous `X-Platform-Api-Key`, `X-Platform-User-Id`, and `X-Client-User-Id` headers are **no longer used** for authentication by this service itself but might still be needed if proxied through a gateway that requires them.
 *   `/health` requires no authentication.
 
 --- 
@@ -132,7 +133,7 @@ Authentication:
 **`POST /api/v1/webhooks`** (Create Webhook Definition)
 
 *   Creates a new webhook configuration.
-*   **Headers:** `X-Platform-Api-Key`, `X-Platform-User-Id`
+*   **Headers:** `Authorization: Bearer YOUR_WEBHOOK_STORE_API_KEY`
 *   **Body:** `WebhookData` (from `@agent-base/types`)
     *   Example:
         ```json
@@ -152,14 +153,14 @@ Authentication:
 **`POST /api/v1/webhooks/search`** (Search Webhook Definitions)
 
 *   Searches for webhooks based on a query string (uses simple text search currently).
-*   **Headers:** `X-Platform-Api-Key`, `X-Platform-User-Id`
+*   **Headers:** `Authorization: Bearer YOUR_WEBHOOK_STORE_API_KEY`
 *   **Body:** `{ "query": string, "limit"?: number }`
 *   **Response:** `ServiceResponse<Webhook[]>` 
 
 **`POST /api/v1/webhooks/:webhookId/link-user`** (Link User to Webhook)
 
 *   Links a specific client user to a webhook definition. Checks if setup (secrets/confirmation) is needed.
-*   **Headers:** `X-Platform-Api-Key`, `X-Platform-User-Id`, `X-Client-User-Id`
+*   **Headers:** `Authorization: Bearer YOUR_WEBHOOK_STORE_API_KEY`. (Note: The service internally may still need a way to identify the specific user - this might need to be passed in the body or via a different mechanism if `X-Client-User-Id` is removed entirely.)
 *   **Params:** `:webhookId` (UUID)
 *   **Body:** None
 *   **Response:** 
@@ -169,7 +170,7 @@ Authentication:
 **`POST /api/v1/webhooks/:webhookId/link-agent`** (Link Agent to User-Webhook Link)
 
 *   Links an agent to an existing, *active* user-webhook link.
-*   **Headers:** `X-Platform-Api-Key`, `X-Platform-User-Id`, `X-Client-User-Id`
+*   **Headers:** `Authorization: Bearer YOUR_WEBHOOK_STORE_API_KEY`. (Note: Similar to link-user, needs agentId and potentially clientUserId.)
 *   **Params:** `:webhookId` (UUID)
 *   **Body:** `{ "agentId": string }` (agentId must be a valid UUID)
 *   **Response:** `ServiceResponse<WebhookAgentLink>`
@@ -177,7 +178,7 @@ Authentication:
 **`POST /api/v1/webhooks/resolve/:webhookProviderId/:subscribedEventId`** (Resolve Incoming Webhook)
 
 *   Used internally by a gateway to find the linked agent(s) for an incoming webhook event.
-*   **Headers:** `X-Platform-Api-Key`, `X-Platform-User-Id`
+*   **Headers:** `Authorization: Bearer YOUR_WEBHOOK_STORE_API_KEY`. (Note: Identification of the original platform user might be needed differently now.)
 *   **Params:** `:webhookProviderId`, `:subscribedEventId`
 *   **Body:** The raw incoming webhook payload (e.g., from Crisp, Gmail, etc.)
     *   Example (Crisp):

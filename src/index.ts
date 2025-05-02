@@ -5,6 +5,7 @@ import { ServiceResponse, ErrorResponse, SecretValue } from '@agent-base/types';
 // Import routers
 import webhookRoutes from './routes/webhookRoutes.js'; // Import the router and add .js
 import { authMiddleware } from './middleware/auth.js'; // Keep if needed globally, remove if only on webhookRoutes
+import { apiKeyAuth } from './middleware/apiKeyAuth.js'; // Import the new API key middleware
 import { _getGsmSecretValueByName, _storeGsmSecretByName } from './lib/gsm.js'; // Import GSM helpers
 
 dotenv.config();
@@ -80,7 +81,12 @@ app.get('/health', (req: Request, res: Response) => {
   res.status(200).json({ status: 'ok', provider: 'webhook-store' });
 });
 
+// --- Apply Global API Key Authentication ---
+// Apply to all routes below this point
+app.use(apiKeyAuth);
+
 // Mount webhook routes under /api/v1
+// These routes will now require the API key via the middleware above
 app.use('/api/v1/webhooks', webhookRoutes);
 
 // --- Error Handling ---
