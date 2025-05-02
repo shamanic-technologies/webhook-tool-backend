@@ -13,7 +13,8 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "migrate:create": "pnpm exec node-pg-migrate create",
     "migrate:up": "pnpm exec node-pg-migrate up",
-    "migrate:down": "pnpm exec node-pg-migrate down"
+    "migrate:down": "pnpm exec node-pg-migrate down",
+    "db:clear": "dotenv -- sh -c 'psql \"$DATABASE_URL\" -c \"TRUNCATE TABLE webhook_agent_links, user_webhooks, webhooks CASCADE;\"'"
   },
   "keywords": [
     "webhook",
@@ -26,8 +27,8 @@
   "author": "Agent Base",
   "license": "MIT",
   "dependencies": {
-    "@agent-base/api-client": "^0.5.0",
-    "@agent-base/types": "^0.10.0",
+    "@agent-base/api-client": "^0.8.0",
+    "@agent-base/types": "^0.13.0",
     "@google-cloud/secret-manager": "^5.6.0",
     "dotenv": "^16.5.0",
     "express": "^4.21.2",
@@ -43,6 +44,7 @@
     "@types/uuid": "^10.0.0",
     "@typescript-eslint/eslint-plugin": "^7.18.0",
     "@typescript-eslint/parser": "^7.18.0",
+    "dotenv-cli": "^8.0.0",
     "eslint": "^8.57.1",
     "eslint-config-prettier": "^9.1.0",
     "eslint-plugin-prettier": "^5.2.6",

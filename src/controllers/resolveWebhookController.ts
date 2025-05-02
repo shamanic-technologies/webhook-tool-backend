@@ -10,6 +10,7 @@ import {
     UtilitySecretType,
     Webhook,
     UtilityProvider,
+    WebhookResolutionRequest
 } from '@agent-base/types';
 import { UserWebhookRecord, WebhookAgentLinkRecord } from '../types/db.js';
 import {
@@ -84,11 +85,9 @@ async function _findUserAndAgentLinks(webhookId: string, identificationHash: str
 
 // --- Controller: resolveWebhookController --- 
 export const resolveWebhookController = async (req: Request, res: Response, next: NextFunction) => {
-    console.log(`>>> Entering resolveWebhookController...`);
     try {
         // Use string type directly from params
-        const { webhookProviderId, subscribedEventId } = req.params;
-        const payload = req.body;
+        const { webhookProviderId, subscribedEventId, payload }: WebhookResolutionRequest = req.body;
         if (!webhookProviderId || !subscribedEventId || !payload || typeof payload !== 'object') {
             return res.status(400).json({ success: false, error: 'Bad Request', message: 'Missing provider, event ID, or valid payload.' });
         }

@@ -28,7 +28,21 @@ if (!projectId) {
     process.exit(1); // Exit if the project ID is missing
 }
 
-const client = new SecretManagerServiceClient();
+// --- Initialize Google Secret Manager Client ---
+// Initialize client options, potentially including credentials from ENV
+const clientOptions: { credentials?: object } = {};
+if (process.env.GOOGLE_CREDENTIALS_JSON) {
+  try {
+    // Attempt to parse credentials from the environment variable
+    clientOptions.credentials = JSON.parse(process.env.GOOGLE_CREDENTIALS_JSON);
+    console.log('Initializing GSM client with credentials from GOOGLE_CREDENTIALS_JSON.');
+  } catch (error) {
+    console.error('Failed to parse GOOGLE_CREDENTIALS_JSON. Falling back to default ADC.', error);
+    // Fallback: If parsing fails, let the client use default ADC search order.
+  }
+}
+// Create the client, passing options (which may include credentials)
+const client = new SecretManagerServiceClient(clientOptions);
 const PARENT = `projects/${projectId}`;
 
 /**
@@ -54,28 +68,31 @@ const generateSecretId = (
 
 /**
  * Internal helper to get the latest version value of a secret by its full GSM name.
- * Does basic JSON parsing.
+ * Handles potential double-stringification by attempting JSON.parse.
  * @param secretName Full GSM secret name (e.g., projects/PROJECT_ID/secrets/SECRET_ID)
  * @returns The parsed secret value or null if not found/empty/parse error.
  * @throws Error on unexpected GSM API errors.
  */
-async function _getGsmSecretValueByName(secretName: string): Promise<string | null> {
+async function _getGsmSecretValueByName(secretName: string): Promise<ServiceResponse<SecretValue>> {
     const nameWithVersion = `${secretName}/versions/latest`;
     try {
         const [version] = await client.accessSecretVersion({ name: nameWithVersion });
         if (!version.payload?.data) {
             console.warn(`Secret version ${nameWithVersion} found but has no data.`);
-            return null;
+            return { success: true, data: { value: null } };
         }
-        const payload = version.payload.data.toString();
-        return payload;
+
+        // Directly return the string representation of the payload
+        const payloadString = version.payload.data.toString();
+        return { success: true, data: { value: payloadString } };
+
     } catch (error: any) {
         if (error.code === 5) { // NOT_FOUND
             console.log(`Secret ${nameWithVersion} not found.`);
-            return null;
+            return { success: true, data: { value: null } };
         }
         console.error(`Error getting secret ${nameWithVersion} from GSM:`, error);
-        throw error; // Re-throw unexpected errors
+        return { success: false, error: error instanceof Error ? error.message : 'Unknown error getting secret from GSM' };
     }
 }
 
@@ -87,7 +104,7 @@ async function _getGsmSecretValueByName(secretName: string): Promise<string | nu
  * @returns True on success, false on failure.
  * @throws Error on unexpected GSM API errors.
  */
-async function _storeGsmSecretByName(secretId: string, secretValue: any): Promise<boolean> {
+async function _storeGsmSecretByName(secretId: string, secretValue: any): Promise<ServiceResponse<string>> {
     const secretName = `${PARENT}/secrets/${secretId}`;
     // Ensure the value is a string before storing
     const valueToStore = String(secretValue); 
@@ -102,7 +119,7 @@ async function _storeGsmSecretByName(secretId: string, secretValue: any): Promis
             payload: { data: Buffer.from(valueToStore) }, // Store raw string buffer
         });
         console.log(`Stored new version for secret: ${secretId}`);
-        return true;
+        return { success: true, data: 'Secret version added successfully' };
 
     } catch (error: any) {
         if (error.code === 5) { // NOT_FOUND
@@ -119,10 +136,10 @@ async function _storeGsmSecretByName(secretId: string, secretValue: any): Promis
                 payload: { data: Buffer.from(valueToStore) }, // Store raw string buffer
             });
             console.log(`Created secret ${secretId} and stored initial version.`);
-            return true;
+            return { success: true, data: 'Secret version added successfully' };
         } else {
             console.error(`Error storing secret ${secretId} in GSM:`, error);
-            throw error; // Re-throw unexpected errors
+            return { success: false, error: error instanceof Error ? error.message : 'Unknown error storing secret in GSM' };
         }
     }
 }
@@ -151,7 +168,7 @@ export async function storeSecretGsm(
     try {
         const secretId = generateSecretId(userType, userId, secretUtilityProvider, secretType);
         const secretName = `${PARENT}/secrets/${secretId}`;
-        const valueToStore = String(secretValue); // Ensure string
+        const valueToStore = secretValue; 
 
         try {
             // Check if secret exists
@@ -242,7 +259,7 @@ export async function getSecretGsm(
     userId: string, 
     secretUtilityProvider: UtilityProvider, 
     secretType: UtilitySecretType
-): Promise<ServiceResponse<{ value: string | null }>> {
+): Promise<ServiceResponse<SecretValue>> {
     try {
         const secretId = generateSecretId(userType, userId, secretUtilityProvider, secretType);
         const name = `${PARENT}/secrets/${secretId}/versions/latest`;

@@ -14,6 +14,10 @@ import { authMiddleware } from '../middleware/auth.js';
 
 const router: Router = Router();
 
+// Define public routes FIRST
+// Route for internal gateway service to resolve incoming webhooks - NO AUTH
+router.post('/resolve', resolveWebhookController);
+
 // Routes requiring standard user/service authentication
 const authenticatedRouter = Router();
 authenticatedRouter.use(authMiddleware);
@@ -23,9 +27,9 @@ authenticatedRouter.post('/search', searchWebhooksController);
 authenticatedRouter.post('/:webhookId/link-user', linkUserController);
 authenticatedRouter.post('/:webhookId/link-agent', linkAgentController);
 
-router.use('/', authenticatedRouter); // Mount authenticated routes
+router.use('/', authenticatedRouter); // Mount authenticated routes AFTER public routes
 
 // Route for internal gateway service to resolve incoming webhooks
-router.post('/resolve/:webhookProviderId/:subscribedEventId', resolveWebhookController);
+// router.post('/resolve', resolveWebhookController); // REMOVE from here
 
 export default router; 

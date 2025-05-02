@@ -10,6 +10,47 @@ import { WebhookData, Webhook, WebhookProviderId, UtilitySecretType } from '@age
 import pgvector from 'pgvector/pg'; // Import for vector type usage
 import { v4 as uuidv4 } from 'uuid'; // For generating webhook IDs
 
+// --- Helper Function for Schema Path Validation --- 
+
+/**
+ * Validates if a dot-notation path exists within a given JSON schema structure.
+ * Primarily checks nested properties.
+ *
+ * @param schema The JSON schema object.
+ * @param path The dot-notation path string (e.g., "data.user.id").
+ * @returns True if the path exists in the schema, false otherwise.
+ */
+const _validatePathInSchema = (schema: any, path: string): boolean => {
+    if (!schema || typeof schema !== 'object' || !path) {
+        return false;
+    }
+    const segments = path.split('.');
+    let currentLevel = schema;
+
+    for (const segment of segments) {
+        // Check if the current level is an object and has properties
+        if (currentLevel && typeof currentLevel === 'object' && currentLevel.properties) {
+            // Check if the segment exists within the properties
+            if (currentLevel.properties.hasOwnProperty(segment)) {
+                currentLevel = currentLevel.properties[segment]; // Move to the next level
+            } else {
+                return false; // Segment not found in properties
+            }
+        } else {
+            // Handle cases where the path references a top-level primitive or schema is malformed
+            // For this validation, we primarily care about nested properties structure
+            // A simple top-level check might be needed if the first segment isn't in properties
+            if (segments.length === 1 && currentLevel.hasOwnProperty(segment)) {
+                 return true; // Path is just a single top-level property
+            } 
+            // If not a recognized structure with properties for nesting, path is invalid
+            return false;
+        }
+    }
+    // If we successfully traversed all segments, the path exists
+    return true;
+};
+
 /**
  * Creates a new webhook definition in the database.
  *
@@ -33,6 +74,39 @@ export const createWebhookService = async (
       conversationIdIdentificationMapping, // Correct app-level name
       eventPayloadSchema 
     } = webhookData;
+  
+    // --- Validation Step --- 
+    if (!eventPayloadSchema || typeof eventPayloadSchema !== 'object') {
+        throw new Error('Validation Error: eventPayloadSchema must be provided as an object.');
+    }
+    if (!clientUserIdentificationMapping || typeof clientUserIdentificationMapping !== 'object'){
+        throw new Error('Validation Error: clientUserIdentificationMapping must be provided as an object.');
+    }
+    if (!conversationIdIdentificationMapping || typeof conversationIdIdentificationMapping !== 'string') {
+        throw new Error('Validation Error: conversationIdIdentificationMapping must be provided as a string.');
+    }
+    if (!requiredSecrets || !Array.isArray(requiredSecrets)) {
+        throw new Error('Validation Error: requiredSecrets must be provided as an array.');
+    }
+
+    // 1. Validate clientUserIdentificationMapping paths against schema and requiredSecrets
+    for (const [secretType, path] of Object.entries(clientUserIdentificationMapping)) {
+        if (typeof path !== 'string') {
+             throw new Error(`Validation Error: Path for client identifier '${secretType}' must be a string.`);
+        }
+        if (!_validatePathInSchema(eventPayloadSchema, path)) {
+            throw new Error(`Validation Error: Path '${path}' for client identifier '${secretType}' not found in eventPayloadSchema.`);
+        }
+        if (!requiredSecrets.includes(secretType as UtilitySecretType)) {
+            throw new Error(`Validation Error: Client identifier '${secretType}' is mapped but not listed in requiredSecrets.`);
+        }
+    }
+
+    // 2. Validate conversationIdIdentificationMapping path against schema
+    if (!_validatePathInSchema(eventPayloadSchema, conversationIdIdentificationMapping)) {
+        throw new Error(`Validation Error: Path '${conversationIdIdentificationMapping}' for conversation identifier not found in eventPayloadSchema.`);
+    }
+    // --- End Validation --- 
   
     // Convert arrays/objects to JSON strings for PG
     const requiredSecretsJson = JSON.stringify(requiredSecrets);

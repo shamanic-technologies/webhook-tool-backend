@@ -1,7 +1,7 @@
 import express, { Express, Request, Response, NextFunction } from 'express';
 import dotenv from 'dotenv';
 import crypto from 'crypto'; // Import crypto for key generation
-import { ServiceResponse, ErrorResponse } from '@agent-base/types';
+import { ServiceResponse, ErrorResponse, SecretValue } from '@agent-base/types';
 // Import routers
 import webhookRoutes from './routes/webhookRoutes.js'; // Import the router and add .js
 import { authMiddleware } from './middleware/auth.js'; // Keep if needed globally, remove if only on webhookRoutes
@@ -35,34 +35,24 @@ async function initializeConfig() {
     const fullSecretName = `projects/${projectId}/secrets/${HMAC_SECRET_NAME}`;
 
     try {
-        console.log(`Attempting to fetch HMAC key from GSM: ${HMAC_SECRET_NAME}`);
-        let hmacKeyValue = await _getGsmSecretValueByName(fullSecretName);
+        const hmacKeyResponse : ServiceResponse<SecretValue> = await _getGsmSecretValueByName(fullSecretName);
 
-        if (hmacKeyValue) {
-            console.log('HMAC key found in GSM.');
-            if (typeof hmacKeyValue !== 'string' || hmacKeyValue.length < 32) { // Basic validation
-                 console.error('WARNING: Fetched HMAC key from GSM is invalid (not a string or too short). Generating a new one.');
-                 hmacKeyValue = null; // Force regeneration
-            }
-        }
+        let hmacKey = hmacKeyResponse.data?.value;
 
-        if (!hmacKeyValue) {
+        if (!hmacKeyResponse.success || !hmacKey) {
             console.log('HMAC key not found or invalid in GSM. Generating and storing a new key...');
             // Generate a new 32-byte (256-bit) key, hex encoded
             const newKey = crypto.randomBytes(32).toString('hex');
-            const stored = await _storeGsmSecretByName(HMAC_SECRET_NAME, newKey);
-            if (stored) {
-                console.log('Successfully stored new HMAC key in GSM.');
-                hmacKeyValue = newKey;
-            } else {
-                // This shouldn't happen with current _storeGsmSecretByName logic unless exception occurs
+            const storedResponse = await _storeGsmSecretByName(HMAC_SECRET_NAME, newKey);
+            if (!storedResponse.success) {
                 throw new Error('Failed to store newly generated HMAC key in GSM.');
             }
+            hmacKey = newKey;
+        
         }
 
-        appConfig.hmacKey = hmacKeyValue as string; // Store the key
-        console.log('HMAC key loaded successfully.');
-        console.log('Configuration initialized successfully.');
+        appConfig.hmacKey = hmacKey; // Store the key
+
 
     } catch (error) {
         console.error('FATAL ERROR during configuration initialization:', error);
