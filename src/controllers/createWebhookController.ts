@@ -24,6 +24,18 @@ import { AuthenticatedRequest } from '../middleware/auth.js';
 export const createWebhookController = async (req: AuthenticatedRequest, res: Response<ServiceResponse<Webhook>>, next: NextFunction) => {
     console.log('>>> Entering createWebhookController');
     try {
+        // --- Get clientUserId from authenticated credentials --- 
+        const clientUserId = req.serviceCredentials?.clientUserId;
+        if (!clientUserId) {
+            // This should not happen if authMiddleware requires it implicitly for this route
+             return res.status(401).json({
+                success: false,
+                error: 'Unauthorized',
+                message: 'Client User ID missing from authentication credentials.',
+            });
+        }
+        // --- End Get clientUserId ---
+
         const validationResult = CreateWebhookSchema.safeParse(req.body);
         if (!validationResult.success) {
             return res.status(400).json(formatValidationError(validationResult.error));
@@ -50,7 +62,7 @@ export const createWebhookController = async (req: AuthenticatedRequest, res: Re
         }
         
         const embedding = await generateEmbedding(`${webhookData.name} ${webhookData.description}`);
-        const newWebhookRecord = await createWebhookService(webhookData, embedding);
+        const newWebhookRecord = await createWebhookService(webhookData, embedding, clientUserId);
         const webhookApp = mapWebhookRecordToWebhook(newWebhookRecord);
         const response: SuccessResponse<Webhook> = { success: true, data: webhookApp };
         console.log('DEBUG: Create Webhook Response:', JSON.stringify(response));

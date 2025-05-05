@@ -56,12 +56,14 @@ const _validatePathInSchema = (schema: any, path: string): boolean => {
  *
  * @param webhookData Data for the new webhook.
  * @param embedding Optional vector embedding for the webhook.
+ * @param clientUserId The ID of the client user creating the webhook.
  * @returns The newly created WebhookRecord.
  * @throws Error if database insertion fails.
  */
 export const createWebhookService = async (
     webhookData: WebhookData, // Uses application-level type
-    embedding: number[]
+    embedding: number[],
+    clientUserId: string // Add clientUserId parameter
 ): Promise<WebhookRecord> => {
     const newId = uuidv4(); // Use a different variable name than the type
     const {
@@ -122,9 +124,12 @@ export const createWebhookService = async (
         client_user_identification_mapping, -- Correct DB column
         conversation_id_identification_mapping, -- Correct DB column
         event_payload_schema, 
-        embedding, created_at, updated_at
+        embedding, 
+        creator_client_user_id, -- Add new column here
+        created_at, 
+        updated_at
       )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW(), NOW())
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW(), NOW()) -- Add $11 for the new value
       RETURNING *;
     `;
     try {
@@ -134,7 +139,8 @@ export const createWebhookService = async (
         clientMappingJson, // Pass JSON string for JSONB column
         conversationIdIdentificationMapping, // Pass string directly for TEXT column
         eventPayloadSchemaJson, 
-        embeddingSql
+        embeddingSql,
+        clientUserId // Pass the clientUserId for the new column
       ]);
       if (result.rows.length === 0) {
         throw new Error("Failed to create webhook definition, INSERT query returned no rows.");
@@ -275,4 +281,27 @@ export const mapWebhookRecordToWebhook = (record: WebhookRecord): Webhook => {
         conversationIdIdentificationMapping: record.conversation_id_identification_mapping,
         eventPayloadSchema: eventPayloadSchema,
     };
+};
+
+/**
+ * Retrieves all webhook definitions created by a specific client user.
+ *
+ * @param clientUserId The ID of the client user who created the webhooks.
+ * @returns An array of WebhookRecords created by the user.
+ * @throws Error if database query fails.
+ */
+export const getUserCreatedWebhooksService = async (clientUserId: string): Promise<WebhookRecord[]> => {
+    const sql = `
+        SELECT *
+        FROM webhooks
+        WHERE creator_client_user_id = $1
+        ORDER BY created_at DESC;
+    `;
+    try {
+        const result = await query<WebhookRecord>(sql, [clientUserId]);
+        return result.rows;
+    } catch (err) {
+        console.error("Error retrieving user's created webhooks:", err);
+        throw new Error(`Database error retrieving created webhooks: ${err instanceof Error ? err.message : String(err)}`);
+    }
 }; 

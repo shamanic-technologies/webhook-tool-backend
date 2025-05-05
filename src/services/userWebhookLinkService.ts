@@ -5,7 +5,7 @@
  * linking users to webhooks (user_webhooks table).
  */
 import { query } from '../lib/db.js';
-import { UserWebhookRecord } from '../types/db.js';
+import { UserWebhookRecord, WebhookRecord } from '../types/db.js';
 import { WebhookStatus, UserWebhook } from '@agent-base/types';
 
 /**
@@ -168,3 +168,33 @@ export async function findUserWebhookByIdentifierHash(
          throw new Error(`Database error finding user webhook by hash: ${err instanceof Error ? err.message : String(err)}`);
      }
 } 
+
+/**
+ * Retrieves all webhook definitions linked to a specific client user.
+ *
+ * @param clientUserId The ID of the client user.
+ * @returns An array of WebhookRecords linked to the user.
+ * @throws Error if database query fails.
+ */
+// REMOVE THIS FUNCTION - Logic moved to webhookDefinitionService
+/*
+export const getUserPrivateWebhooksService = async (clientUserId: string): Promise<WebhookRecord[]> => {
+    // Select all columns from webhooks joined with user_webhooks
+    const sql = `
+        SELECT w.*
+        FROM webhooks w
+        INNER JOIN user_webhooks uw ON w.id = uw.webhook_id
+        WHERE uw.client_user_id = $1
+        ORDER BY w.created_at DESC;
+    `;
+    try {
+        // Specify WebhookRecord as the expected return type for the rows
+        const result = await query<WebhookRecord>(sql, [clientUserId]);
+        // The result.rows will be an array of WebhookRecord objects
+        return result.rows;
+    } catch (err) {
+        console.error("Error retrieving user's private webhooks:", err);
+        throw new Error(`Database error retrieving user webhooks: ${err instanceof Error ? err.message : String(err)}`);
+    }
+};
+*/ 

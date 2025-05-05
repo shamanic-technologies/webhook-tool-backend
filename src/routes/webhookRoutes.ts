@@ -10,6 +10,7 @@ import { searchWebhooksController } from '../controllers/searchWebhooksControlle
 import { linkUserController } from '../controllers/linkUserController.js';
 import { linkAgentController } from '../controllers/linkAgentController.js';
 import { resolveWebhookController } from '../controllers/resolveWebhookController.js';
+import { getUserCreatedWebhooksController } from '../controllers/getUserCreatedWebhooksController.js';
 import { authMiddleware } from '../middleware/auth.js';
 
 const router: Router = Router();
@@ -26,6 +27,7 @@ authenticatedRouter.post('/', createWebhookController);
 authenticatedRouter.post('/search', searchWebhooksController);
 authenticatedRouter.post('/:webhookId/link-user', linkUserController);
 authenticatedRouter.post('/:webhookId/link-agent', linkAgentController);
+authenticatedRouter.post('/get-user-created-webhooks', getUserCreatedWebhooksController);
 
 router.use('/', authenticatedRouter); // Mount authenticated routes AFTER public routes
 
