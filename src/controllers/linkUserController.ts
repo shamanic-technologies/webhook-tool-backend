@@ -100,7 +100,7 @@ async function _checkWebhookSetupStatus(
   const missingInputs: UtilityInputSecret[] = [];
   const missingConfirmations: UtilityActionConfirmation[] = [];
   const identifierValues: Record<string, any> = {};
-  const webhookUrlToInput = `${process.env.WEBHOOK_URL || "YOUR_BASE_WEBHOOK_URL"}/${webhook.webhookProviderId}/${webhook.subscribedEventId}`;
+  const webhookUrlToInput = `${process.env.WEBHOOK_URL}/${webhook.webhookProviderId}/${webhook.subscribedEventId}`;
   const confirmationSecretDbType =
     UtilityActionConfirmation.WEBHOOK_URL_INPUTED;
 

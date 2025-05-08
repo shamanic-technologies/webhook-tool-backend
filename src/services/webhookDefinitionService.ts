@@ -10,6 +10,10 @@ import { WebhookData, Webhook, WebhookProviderId, UtilitySecretType } from '@age
 import pgvector from 'pgvector/pg'; // Import for vector type usage
 import { v4 as uuidv4 } from 'uuid'; // For generating webhook IDs
 
+// --- Import UserWebhookLinkService and AgentWebhookLinkService ---
+import * as userWebhookLinkService from './userWebhookLinkService.js';
+import * as agentWebhookLinkService from './agentWebhookLinkService.js';
+
 // --- Helper Function for Schema Path Validation --- 
 
 /**
@@ -176,28 +180,56 @@ export const getWebhookById = async (id: string): Promise<WebhookRecord | null> 
 
 /**
  * Searches for webhooks based on a query vector (cosine similarity).
- * Placeholder: Needs actual embedding generation and vector column in DB.
  *
  * @param clientUserId The ID of the client user who created the webhooks.
  * @param queryVector The vector representation of the search query.
  * @param limit The maximum number of results to return.
- * @returns An array of matching WebhookRecords.
+ * @returns An array of matching Webhooks, enhanced with URL and link status.
  * @throws Error if database query fails.
  */
-export const searchWebhooks = async (clientUserId: string, queryVector: number[], limit: number): Promise<WebhookRecord[]> => {
+export const searchWebhooks = async (clientUserId: string, queryVector: number[], limit: number): Promise<Webhook[]> => {
   // Ensure embedding column exists and has an index (e.g., USING ivfflat or hnsw)
   const embeddingSql = pgvector.toSql(queryVector);
   const sql = `
     SELECT *, 1 - (embedding <=> $1) AS similarity
     FROM webhooks
-    WHERE creator_client_user_id = $3 -- Filter by clientUserId
+    WHERE creator_client_user_id = $3 -- Filter by clientUserId OR make it public if needed
     ORDER BY embedding <=> $1
     LIMIT $2;
   `;
   try {
-    // Pass clientUserId as the third parameter to the query
     const result = await query<WebhookRecord & { similarity: number }>(sql, [embeddingSql, limit, clientUserId]);
-    return result.rows;
+    
+    const enhancedWebhooks: Webhook[] = await Promise.all(
+      result.rows.map(async (record: WebhookRecord & { similarity: number }) => { // Explicitly type 'record'
+        const baseWebhook = mapWebhookRecordToWebhook(record);
+
+        // 1. Construct webhookUrl using process.env
+        const webhookUrl = `${process.env.WEBHOOK_URL}/${baseWebhook.webhookProviderId}/${baseWebhook.subscribedEventId}`;
+
+        // 2. Check if linked to current user
+        const userLink = await userWebhookLinkService.findUserWebhook(baseWebhook.id, clientUserId);
+        const isLinkedToCurrentUser = !!userLink;
+
+        // 3. Check if linked to an agent (in the context of this user)
+        let linkedAgentId: string | undefined = undefined;
+        if (isLinkedToCurrentUser && userLink) { 
+            const agentLinkRecord = await agentWebhookLinkService.findAgentLink(baseWebhook.id, clientUserId, userLink.platform_user_id);
+            if (agentLinkRecord) {
+                linkedAgentId = agentLinkRecord.agent_id;
+            }
+        }
+
+        return {
+          ...baseWebhook,
+          webhookUrl,
+          isLinkedToCurrentUser,
+          linkedAgentId,
+        };
+      })
+    );
+    
+    return enhancedWebhooks;
   } catch (err) {
     console.error("Error searching webhooks:", err);
     if (err instanceof Error && err.message.includes('column "embedding" does not exist')) {

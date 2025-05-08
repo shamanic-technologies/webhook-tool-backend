@@ -8,8 +8,7 @@ import {
     SuccessResponse 
 } from '@agent-base/types';
 import { 
-    searchWebhooks as searchWebhooksService, 
-    mapWebhookRecordToWebhook 
+    searchWebhooks as searchWebhooksService 
 } from '../services/webhookDefinitionService.js';
 import { generateEmbedding } from '../lib/embeddingUtils.js';
 import { SearchWebhookSchema } from '../lib/schemas.js';
@@ -31,9 +30,8 @@ export const searchWebhooksController = async (req: AuthenticatedRequest, res: R
         }
         const { query: searchQuery, limit } = validationResult.data;
         const queryVector = await generateEmbedding(searchQuery);
-        // clientUserId is now correctly typed as string for the service call.
-        const results = await searchWebhooksService(clientUserId, queryVector, limit);
-        const webhooksApp = results.map(mapWebhookRecordToWebhook);
+        // searchWebhooksService now returns the fully enhanced Webhook[]
+        const webhooksApp = await searchWebhooksService(clientUserId, queryVector, limit);
         const response: SuccessResponse<Webhook[]> = { success: true, data: webhooksApp };
         console.log('DEBUG: Search Webhook Response:', JSON.stringify(response));
         res.status(200).json(response);
