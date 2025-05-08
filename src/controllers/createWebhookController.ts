@@ -28,17 +28,8 @@ export const createWebhookController = async (
 ) => {
   console.log(">>> Entering createWebhookController");
   try {
-    // --- Get clientUserId from authenticated credentials ---
-    const clientUserId = req.serviceCredentials?.clientUserId;
-    if (!clientUserId) {
-      // This should not happen if authMiddleware requires it implicitly for this route
-      return res.status(401).json({
-        success: false,
-        error: "Unauthorized",
-        message: "Client User ID missing from authentication credentials.",
-      });
-    }
-    // --- End Get clientUserId ---
+    // clientUserId is guaranteed to be a string by authMiddleware.
+    const clientUserId = req.serviceCredentials!.clientUserId!;
 
     const validationResult = CreateWebhookSchema.safeParse(req.body);
     if (!validationResult.success) {

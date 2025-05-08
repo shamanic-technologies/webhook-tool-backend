@@ -20,14 +20,8 @@ import { AuthenticatedRequest } from '../middleware/auth.js';
 export const getUserCreatedWebhooksController = async (req: AuthenticatedRequest, res: Response<ServiceResponse<Webhook[]>>, next: NextFunction) => {
     console.log('>>> Entering getUserCreatedWebhooksController');
     try {
-        // No request body validation needed, uses authenticated user ID
-        const clientUserId = req.serviceCredentials?.clientUserId;
-        if (!clientUserId) {
-            // This should ideally not happen if authMiddleware is working correctly
-            // and the specific endpoint requires a clientUserId implicitly.
-            console.error('[Controller Error] Client User ID not found in authenticated request credentials');
-            return res.status(401).json({ success: false, error: 'Unauthorized', message: 'Client User ID missing from credentials.' });
-        }
+        // clientUserId is guaranteed to be a string by authMiddleware.
+        const clientUserId = req.serviceCredentials!.clientUserId!;
 
         // Call the updated service function
         const results = await getUserCreatedWebhooksService(clientUserId); 

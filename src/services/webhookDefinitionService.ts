@@ -178,22 +178,25 @@ export const getWebhookById = async (id: string): Promise<WebhookRecord | null> 
  * Searches for webhooks based on a query vector (cosine similarity).
  * Placeholder: Needs actual embedding generation and vector column in DB.
  *
+ * @param clientUserId The ID of the client user who created the webhooks.
  * @param queryVector The vector representation of the search query.
  * @param limit The maximum number of results to return.
  * @returns An array of matching WebhookRecords.
  * @throws Error if database query fails.
  */
-export const searchWebhooks = async (queryVector: number[], limit: number): Promise<WebhookRecord[]> => {
+export const searchWebhooks = async (clientUserId: string, queryVector: number[], limit: number): Promise<WebhookRecord[]> => {
   // Ensure embedding column exists and has an index (e.g., USING ivfflat or hnsw)
   const embeddingSql = pgvector.toSql(queryVector);
   const sql = `
     SELECT *, 1 - (embedding <=> $1) AS similarity
     FROM webhooks
+    WHERE creator_client_user_id = $3 -- Filter by clientUserId
     ORDER BY embedding <=> $1
     LIMIT $2;
   `;
   try {
-    const result = await query<WebhookRecord & { similarity: number }>(sql, [embeddingSql, limit]);
+    // Pass clientUserId as the third parameter to the query
+    const result = await query<WebhookRecord & { similarity: number }>(sql, [embeddingSql, limit, clientUserId]);
     return result.rows;
   } catch (err) {
     console.error("Error searching webhooks:", err);

@@ -22,13 +22,17 @@ import { AuthenticatedRequest } from '../middleware/auth.js';
 export const searchWebhooksController = async (req: AuthenticatedRequest, res: Response<ServiceResponse<Webhook[]>>, next: NextFunction) => {
     console.log('>>> Entering searchWebhooksController');
     try {
+        // clientUserId is guaranteed to be a string by authMiddleware after its checks.
+        const clientUserId = req.serviceCredentials!.clientUserId!;
+
         const validationResult = SearchWebhookSchema.safeParse(req.body);
         if (!validationResult.success) {
             return res.status(400).json(formatValidationError(validationResult.error));
         }
         const { query: searchQuery, limit } = validationResult.data;
         const queryVector = await generateEmbedding(searchQuery);
-        const results = await searchWebhooksService(queryVector, limit);
+        // clientUserId is now correctly typed as string for the service call.
+        const results = await searchWebhooksService(clientUserId, queryVector, limit);
         const webhooksApp = results.map(mapWebhookRecordToWebhook);
         const response: SuccessResponse<Webhook[]> = { success: true, data: webhooksApp };
         console.log('DEBUG: Search Webhook Response:', JSON.stringify(response));
