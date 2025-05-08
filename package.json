@@ -1,5 +1,5 @@
 {
-  "name": "@agent-base/webhook-store",
+  "name": "@agent-base/webhook-tool",
   "version": "0.3.0",
   "description": "Webhook management service with PostgreSQL/pgvector and Google Secret Manager integration",
   "main": "dist/index.js",
@@ -28,8 +28,8 @@
   "author": "Agent Base",
   "license": "MIT",
   "dependencies": {
-    "@agent-base/api-client": "^0.8.0",
-    "@agent-base/types": "^0.13.0",
+    "@agent-base/api-client": "^0.20.0",
+    "@agent-base/types": "^0.15.0",
     "@google-cloud/secret-manager": "^5.6.0",
     "dotenv": "^16.5.0",
     "express": "^4.21.2",

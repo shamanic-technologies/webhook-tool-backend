@@ -98,7 +98,8 @@ app.use((req: Request, res: Response, next: NextFunction) => {
   const errorResponse: ErrorResponse = {
     success: false,
     error: 'Not Found',
-    message: `Endpoint ${req.method} ${req.path} not found.`,
+    details: `Endpoint ${req.method} ${req.path} not found.`,
+    hint: "Please check the API documentation for available endpoints and correct request paths."
   };
   res.status(404).json(errorResponse);
 });
@@ -107,15 +108,15 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 app.use((err: Error, req: Request, res: Response<ServiceResponse<never>>, next: NextFunction) => {
   console.error('Unhandled Error:', err.stack || err);
 
-  // Avoid sending detailed errors in production
-  const message = process.env.NODE_ENV === 'production' ? 'Internal Server Error' : err.message;
-  const details = process.env.NODE_ENV === 'production' ? undefined : err.stack;
+  // Determine primary error message for details
+  const errorMessage = process.env.NODE_ENV === 'production' ? 'An unexpected internal error occurred.' : err.message;
+  const errorStack = process.env.NODE_ENV === 'production' ? undefined : err.stack;
 
   const errorResponse: ErrorResponse = {
     success: false,
     error: err.name === 'ZodError' ? 'Validation Error' : 'Internal Server Error',
-    message: message,
-    details: details,
+    details: errorStack ? `${errorMessage} Stack: ${errorStack}` : errorMessage,
+    hint: "An unexpected error occurred. If this persists, please check server logs or contact support. For validation errors, ensure your request payload matches the expected schema."
   };
   
   // Use appropriate status code (e.g., 400 for validation errors)

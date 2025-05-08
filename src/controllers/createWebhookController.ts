@@ -7,7 +7,6 @@ import {
   ServiceResponse,
   SuccessResponse,
   UtilityProvider,
-  UtilitySecretType,
 } from "@agent-base/types";
 import {
   createWebhookService,

@@ -9,11 +9,11 @@ importers:
   .:
     dependencies:
       '@agent-base/api-client':
-        specifier: ^0.8.0
-        version: 0.8.0(@agent-base/types@0.13.0(react@19.1.0)(zod@3.24.4))
+        specifier: ^0.20.0
+        version: 0.20.0(@agent-base/types@0.15.0(react@19.1.0)(zod@3.24.4))(react@19.1.0)(zod@3.24.4)
       '@agent-base/types':
-        specifier: ^0.13.0
-        version: 0.13.0(react@19.1.0)(zod@3.24.4)
+        specifier: ^0.15.0
+        version: 0.15.0(react@19.1.0)(zod@3.24.4)
       '@google-cloud/secret-manager':
         specifier: ^5.6.0
         version: 5.6.0
@@ -38,7 +38,7 @@ importers:
     devDependencies:
       '@redocly/cli':
         specifier: ^1.34.2
-        version: 1.34.2(ajv@6.12.6)
+        version: 1.34.3(ajv@6.12.6)
       '@types/express':
         specifier: ^4.17.21
         version: 4.17.21
@@ -87,13 +87,13 @@ importers:
 
 packages:
 
-  '@agent-base/api-client@0.8.0':
-    resolution: {integrity: sha512-VM1QWPvgfN8ie83gPk7mIH7Nn3u5vj8NgqkqqgnckgAgro07YMJO8iZK/hyjQdW5y4gBuPnqckdYh7VJ5I+qew==}
+  '@agent-base/api-client@0.20.0':
+    resolution: {integrity: sha512-qVugAxVevPwAXZe0vLgGSZv4/RismixdklGkgULwjWRtEkIiy+7tQYZp2nEkI9F0Tl9feaO8BuqV+SuX2NlmMA==}
     peerDependencies:
-      '@agent-base/types': 0.13.0
+      '@agent-base/types': 0.14.0
 
-  '@agent-base/types@0.13.0':
-    resolution: {integrity: sha512-DWTZiotZgMV1w5ttIEQaxzDmn6S6pw8SAMyofY5Au1H4ZLNsRw2OrX+dycJNGQOP75dnPMuO94fWJEWK6EyvVg==}
+  '@agent-base/types@0.15.0':
+    resolution: {integrity: sha512-pn7wdpGaC1BmqlJVPMThE0ASfMlToX6Y7SrzszdH1QRCYawBHgzOjoTjge4Z37RureenpiTxdW6P6wyD9DgWkg==}
 
   '@ai-sdk/provider-utils@2.2.8':
     resolution: {integrity: sha512-fqhG+4sCVv8x7nFzYnFo19ryhAa3w096Kmc3hWxMQfW/TubPOmt3A6tYZhl4mUfQWWQMsuSkLrtjlWuXBVSGQA==}
@@ -525,20 +525,20 @@ packages:
   '@redocly/ajv@8.11.2':
     resolution: {integrity: sha512-io1JpnwtIcvojV7QKDUSIuMN/ikdOUd1ReEnUnMKGfDVridQZ31J0MmIuqwuRjWDZfmvr+Q0MqCcfHM2gTivOg==}
 
-  '@redocly/cli@1.34.2':
-    resolution: {integrity: sha512-XnKG7yrr0GUZ7MyqHk9hRt//HGUSnLDwwEXI8HDQdyDFp+YFbddqcQPOWc/sDeDBTEiBXqwPOb3/VKA+8NtSMw==}
+  '@redocly/cli@1.34.3':
+    resolution: {integrity: sha512-GJNBTMfm5wTCtH6K+RtPQZuGbqflMclXqAZ5My12tfux6xFDMW1l0MNd5RMpnIS1aeFcDX++P1gnnROWlesj4w==}
     engines: {node: '>=18.17.0', npm: '>=9.5.0'}
     hasBin: true
 
   '@redocly/config@0.22.2':
     resolution: {integrity: sha512-roRDai8/zr2S9YfmzUfNhKjOF0NdcOIqF7bhf4MVC5UxpjIysDjyudvlAiVbpPHp3eDRWbdzUgtkK1a7YiDNyQ==}
 
-  '@redocly/openapi-core@1.34.2':
-    resolution: {integrity: sha512-glfkQFJizLdq2fBkNvc2FJW0sxDb5exd0wIXhFk+WHaFLMREBC3CxRo2Zq7uJIdfV9U3YTceMbXJklpDfmmwFQ==}
+  '@redocly/openapi-core@1.34.3':
+    resolution: {integrity: sha512-3arRdUp1fNx55itnjKiUhO6t4Mf91TsrTIYINDNLAZPS0TPd5YpiXRctwjel0qqWoOOhjA34cZ3m4dksLDFUYg==}
     engines: {node: '>=18.17.0', npm: '>=9.5.0'}
 
-  '@redocly/respect-core@1.34.2':
-    resolution: {integrity: sha512-X6VR9bbHXrI01Wh5t6TIHxFCVHcP4Iy42micKLIk/Cg6EmHVbaSDGOD6mxChXtEIrwnY+bqyUbjlXr9+YM7B9A==}
+  '@redocly/respect-core@1.34.3':
+    resolution: {integrity: sha512-vo/gu7dRGwTVsRueVSjVk04jOQuL0w22RBJRdRUWkfyse791tYXgMCOx35ijKekL83Q/7Okxf/YX6UY1v5CAug==}
     engines: {node: '>=18.17.0', npm: '>=9.5.0'}
 
   '@rollup/rollup-android-arm-eabi@4.40.2':
@@ -2156,8 +2156,8 @@ packages:
     resolution: {integrity: sha512-GDhwkLfywWL2s6vEjyhri+eXmfH6j1L7JE27WhqLeYzoh/A3DBaYGEj2H/HFZCn/kMfim73FXxEJTw06WtxQwg==}
     engines: {node: '>= 14.18.0'}
 
-  redoc@2.4.0:
-    resolution: {integrity: sha512-rFlfzFVWS9XJ6aYAs/bHnLhHP5FQEhwAHDBVgwb9L2FqDQ8Hu8rQ1G84iwaWXxZfPP9UWn7JdWkxI6MXr2ZDjw==}
+  redoc@2.5.0:
+    resolution: {integrity: sha512-NpYsOZ1PD9qFdjbLVBZJWptqE+4Y6TkUuvEOqPUmoH7AKOmPcE+hYjotLxQNTqVoWL4z0T2uxILmcc8JGDci+Q==}
     engines: {node: '>=6.9', npm: '>=3.0.0'}
     peerDependencies:
       core-js: ^3.1.4
@@ -2362,8 +2362,8 @@ packages:
   stubs@3.0.0:
     resolution: {integrity: sha512-PdHt7hHUJKxvTCgbKX9C1V/ftOcjJQgz8BZwNfV5c4B6dcGqlpelTbJ999jBGZ2jYiPAwcX5dP6oBwVlBlUbxw==}
 
-  styled-components@6.1.17:
-    resolution: {integrity: sha512-97D7DwWanI7nN24v0D4SvbfjLE9656umNSJZkBkDIWL37aZqG/wRQ+Y9pWtXyBIM/NSfcBzHLErEsqHmJNSVUg==}
+  styled-components@6.1.18:
+    resolution: {integrity: sha512-Mvf3gJFzZCkhjY2Y/Fx9z1m3dxbza0uI9H1CbNZm/jSHCojzJhQ0R7bByrlFJINnMzz/gPulpoFFGymNwrsMcw==}
     engines: {node: '>= 16'}
     peerDependencies:
       react: '>= 16.8.0'
@@ -2637,17 +2637,22 @@ packages:
 
 snapshots:
 
-  '@agent-base/api-client@0.8.0(@agent-base/types@0.13.0(react@19.1.0)(zod@3.24.4))':
+  '@agent-base/api-client@0.20.0(@agent-base/types@0.15.0(react@19.1.0)(zod@3.24.4))(react@19.1.0)(zod@3.24.4)':
     dependencies:
-      '@agent-base/types': 0.13.0(react@19.1.0)(zod@3.24.4)
+      '@agent-base/types': 0.15.0(react@19.1.0)(zod@3.24.4)
+      ai: 4.3.15(react@19.1.0)(zod@3.24.4)
       axios: 1.9.0
     transitivePeerDependencies:
       - debug
+      - react
+      - zod
 
-  '@agent-base/types@0.13.0(react@19.1.0)(zod@3.24.4)':
+  '@agent-base/types@0.15.0(react@19.1.0)(zod@3.24.4)':
     dependencies:
+      '@types/json-schema': 7.0.15
       ai: 4.3.15(react@19.1.0)(zod@3.24.4)
       axios: 1.9.0
+      json-schema: 0.4.0
     transitivePeerDependencies:
       - debug
       - react
@@ -3010,7 +3015,7 @@ snapshots:
       require-from-string: 2.0.2
       uri-js-replace: 1.0.1
 
-  '@redocly/cli@1.34.2(ajv@6.12.6)':
+  '@redocly/cli@1.34.3(ajv@6.12.6)':
     dependencies:
       '@opentelemetry/api': 1.9.0
       '@opentelemetry/exporter-trace-otlp-http': 0.53.0(@opentelemetry/api@1.9.0)
@@ -3018,8 +3023,8 @@ snapshots:
       '@opentelemetry/sdk-trace-node': 1.26.0(@opentelemetry/api@1.9.0)
       '@opentelemetry/semantic-conventions': 1.27.0
       '@redocly/config': 0.22.2
-      '@redocly/openapi-core': 1.34.2
-      '@redocly/respect-core': 1.34.2(ajv@6.12.6)
+      '@redocly/openapi-core': 1.34.3
+      '@redocly/respect-core': 1.34.3(ajv@6.12.6)
       abort-controller: 3.0.0
       chokidar: 3.6.0
       colorette: 1.4.0
@@ -3033,10 +3038,10 @@ snapshots:
       pluralize: 8.0.0
       react: 19.1.0
       react-dom: 19.1.0(react@19.1.0)
-      redoc: 2.4.0(core-js@3.42.0)(mobx@6.13.7)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)(styled-components@6.1.17(react-dom@19.1.0(react@19.1.0))(react@19.1.0))
+      redoc: 2.5.0(core-js@3.42.0)(mobx@6.13.7)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)(styled-components@6.1.18(react-dom@19.1.0(react@19.1.0))(react@19.1.0))
       semver: 7.7.1
       simple-websocket: 9.1.0
-      styled-components: 6.1.17(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
+      styled-components: 6.1.18(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
       yargs: 17.0.1
     transitivePeerDependencies:
       - ajv
@@ -3048,7 +3053,7 @@ snapshots:
 
   '@redocly/config@0.22.2': {}
 
-  '@redocly/openapi-core@1.34.2':
+  '@redocly/openapi-core@1.34.3':
     dependencies:
       '@redocly/ajv': 8.11.2
       '@redocly/config': 0.22.2
@@ -3062,11 +3067,11 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@redocly/respect-core@1.34.2(ajv@6.12.6)':
+  '@redocly/respect-core@1.34.3(ajv@6.12.6)':
     dependencies:
       '@faker-js/faker': 7.6.0
       '@redocly/ajv': 8.11.2
-      '@redocly/openapi-core': 1.34.2
+      '@redocly/openapi-core': 1.34.3
       better-ajv-errors: 1.2.0(ajv@6.12.6)
       colorette: 2.0.20
       concat-stream: 2.0.0
@@ -4713,9 +4718,9 @@ snapshots:
 
   readdirp@4.1.2: {}
 
-  redoc@2.4.0(core-js@3.42.0)(mobx@6.13.7)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)(styled-components@6.1.17(react-dom@19.1.0(react@19.1.0))(react@19.1.0)):
+  redoc@2.5.0(core-js@3.42.0)(mobx@6.13.7)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)(styled-components@6.1.18(react-dom@19.1.0(react@19.1.0))(react@19.1.0)):
     dependencies:
-      '@redocly/openapi-core': 1.34.2
+      '@redocly/openapi-core': 1.34.3
       classnames: 2.5.1
       core-js: 3.42.0
       decko: 1.2.0
@@ -4738,7 +4743,7 @@ snapshots:
       react-tabs: 6.1.0(react@19.1.0)
       slugify: 1.4.7
       stickyfill: 1.1.1
-      styled-components: 6.1.17(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
+      styled-components: 6.1.18(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
       swagger2openapi: 7.0.8
       url-template: 2.0.8
     transitivePeerDependencies:
@@ -4976,7 +4981,7 @@ snapshots:
 
   stubs@3.0.0: {}
 
-  styled-components@6.1.17(react-dom@19.1.0(react@19.1.0))(react@19.1.0):
+  styled-components@6.1.18(react-dom@19.1.0(react@19.1.0))(react@19.1.0):
     dependencies:
       '@emotion/is-prop-valid': 1.2.2
       '@emotion/unitless': 0.8.1
