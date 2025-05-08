@@ -8,7 +8,9 @@ import { authMiddleware } from './middleware/auth.js'; // Keep if needed globall
 import { apiKeyAuth } from './middleware/apiKeyAuth.js'; // Import the new API key middleware
 import { _getGsmSecretValueByName, _storeGsmSecretByName } from './lib/gsm.js'; // Import GSM helpers
 
-dotenv.config();
+dotenv.config(); // Call it and store the result
+
+// --- End Debug dotenv loading ---
 
 // --- Configuration Store ---
 // Simple in-memory config store, expand if needed

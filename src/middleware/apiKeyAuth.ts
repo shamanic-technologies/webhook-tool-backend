@@ -5,18 +5,18 @@ import { Request, Response, NextFunction } from 'express';
 /**
  * Middleware to authenticate requests using an API key.
  * Checks for the 'Authorization' header with a Bearer token
- * and validates it against the WEBHOOK_STORE_API_KEY environment variable.
+ * and validates it against the WEBHOOK_TOOL_API_KEY environment variable.
  *
  * @param req - Express request object.
  * @param res - Express response object.
  * @param next - Express next function.
  */
 export const apiKeyAuth = (req: Request, res: Response, next: NextFunction): void => {
-  const apiKey = process.env.WEBHOOK_STORE_API_KEY;
+  const apiKey = process.env.WEBHOOK_TOOL_API_KEY;
 
   // Ensure the API key is configured in the environment
   if (!apiKey) {
-    console.error('Error: WEBHOOK_STORE_API_KEY is not set in environment variables.');
+    console.error('Error: WEBHOOK_TOOL_API_KEY is not set in environment variables for webhook-tool-backend.');
     // Throw error in production environments instead of sending 500
     // For simplicity in MVP, we send 500, but ideally should throw.
     res.status(500).json({ message: 'Internal Server Error: API Key not configured.' });
