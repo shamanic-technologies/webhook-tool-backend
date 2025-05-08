@@ -27,7 +27,7 @@ authenticatedRouter.post('/', createWebhookController);
 authenticatedRouter.post('/search', searchWebhooksController);
 authenticatedRouter.post('/:webhookId/link-user', linkUserController);
 authenticatedRouter.post('/:webhookId/link-agent', linkAgentController);
-authenticatedRouter.post('/get-user-created-webhooks', getUserCreatedWebhooksController);
+authenticatedRouter.get('/get-user-created-webhooks', getUserCreatedWebhooksController);
 
 router.use('/', authenticatedRouter); // Mount authenticated routes AFTER public routes
 
