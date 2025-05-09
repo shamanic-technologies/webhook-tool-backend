@@ -204,27 +204,33 @@ export const searchWebhooks = async (clientUserId: string, queryVector: number[]
       result.rows.map(async (record: WebhookRecord & { similarity: number }) => { // Explicitly type 'record'
         const baseWebhook = mapWebhookRecordToWebhook(record);
 
-        // 1. Construct webhookUrl using process.env
+        // 1. Construct webhookUrl
         const webhookUrl = `${process.env.WEBHOOK_URL}/${baseWebhook.webhookProviderId}/${baseWebhook.subscribedEventId}`;
 
-        // 2. Check if linked to current user
+        // 2. Get UserWebhook link details
         const userLink = await userWebhookLinkService.findUserWebhook(baseWebhook.id, clientUserId);
-        const isLinkedToCurrentUser = !!userLink;
+        const isLinkedToCurrentUser = !!userLink; // Boolean: true if userLink exists
+        const currentUserWebhookStatus = userLink ? userLink.status : undefined; // Actual status or undefined
 
         // 3. Check if linked to an agent (in the context of this user)
         let linkedAgentId: string | undefined = undefined;
-        if (isLinkedToCurrentUser && userLink) { 
+        let isLinkedToAgent = false; // Default to false, will become true if an agent is linked
+        // Ensure userLink and its platform_user_id are valid before proceeding
+        if (userLink && userLink.platform_user_id) { 
             const agentLinkRecord = await agentWebhookLinkService.findAgentLink(baseWebhook.id, clientUserId, userLink.platform_user_id);
-            if (agentLinkRecord) {
+            if (agentLinkRecord && agentLinkRecord.agent_id) {
                 linkedAgentId = agentLinkRecord.agent_id;
+                isLinkedToAgent = true; // Set to true if agent is linked
             }
         }
 
         return {
           ...baseWebhook,
           webhookUrl,
-          isLinkedToCurrentUser,
-          linkedAgentId,
+          isLinkedToCurrentUser,    // Populate based on userLink existence
+          currentUserWebhookStatus, // Populate with actual status from userLink
+          isLinkedToAgent,          // Populate with explicit boolean
+          linkedAgentId,            // Populate with agent ID or undefined
         };
       })
     );
