@@ -29,8 +29,14 @@ export const searchWebhooksController = async (req: AuthenticatedRequest, res: R
             return res.status(400).json(formatValidationError(validationResult.error));
         }
         const { query: searchQuery, limit } = validationResult.data;
-        const queryVector = await generateEmbedding(searchQuery);
-        // searchWebhooksService now returns the fully enhanced Webhook[]
+
+        let queryVector: number[] | null = null;
+        if (searchQuery && searchQuery.trim() !== '') {
+            queryVector = await generateEmbedding(searchQuery);
+        } 
+        // If searchQuery is empty or only whitespace, queryVector remains null
+
+        // searchWebhooksService will need to handle a null queryVector
         const webhooksApp = await searchWebhooksService(clientUserId, queryVector, limit);
         const response: SuccessResponse<Webhook[]> = { success: true, data: webhooksApp };
         console.log('DEBUG: Search Webhook Response:', JSON.stringify(response));

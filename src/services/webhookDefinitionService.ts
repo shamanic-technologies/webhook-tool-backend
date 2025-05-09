@@ -179,29 +179,46 @@ export const getWebhookById = async (id: string): Promise<WebhookRecord | null> 
 };
 
 /**
- * Searches for webhooks based on a query vector (cosine similarity).
+ * Searches for webhooks based on a query vector (cosine similarity) or lists all if queryVector is null.
  *
  * @param clientUserId The ID of the client user who created the webhooks.
- * @param queryVector The vector representation of the search query.
+ * @param queryVector The vector representation of the search query, or null to list all.
  * @param limit The maximum number of results to return.
  * @returns An array of matching Webhooks, enhanced with URL and link status.
  * @throws Error if database query fails.
  */
-export const searchWebhooks = async (clientUserId: string, queryVector: number[], limit: number): Promise<Webhook[]> => {
-  // Ensure embedding column exists and has an index (e.g., USING ivfflat or hnsw)
-  const embeddingSql = pgvector.toSql(queryVector);
-  const sql = `
-    SELECT *, 1 - (embedding <=> $1) AS similarity
-    FROM webhooks
-    WHERE creator_client_user_id = $3 -- Filter by clientUserId OR make it public if needed
-    ORDER BY embedding <=> $1
-    LIMIT $2;
-  `;
+export const searchWebhooks = async (clientUserId: string, queryVector: number[] | null, limit: number): Promise<Webhook[]> => {
+  let sql: string;
+  let queryParams: any[];
+
+  if (queryVector) {
+    const embeddingSql = pgvector.toSql(queryVector);
+    sql = `
+      SELECT *, 1 - (embedding <=> $1) AS similarity
+      FROM webhooks
+      WHERE creator_client_user_id = $3 -- Filter by clientUserId
+      ORDER BY embedding <=> $1
+      LIMIT $2;
+    `;
+    queryParams = [embeddingSql, limit, clientUserId];
+  } else {
+    // No queryVector, fetch all webhooks for the user, ordered by creation date
+    sql = `
+      SELECT *
+      FROM webhooks
+      WHERE creator_client_user_id = $1
+      ORDER BY created_at DESC
+      LIMIT $2;
+    `;
+    queryParams = [clientUserId, limit];
+  }
+
   try {
-    const result = await query<WebhookRecord & { similarity: number }>(sql, [embeddingSql, limit, clientUserId]);
+    // The result type from the query might not have 'similarity' if queryVector is null
+    const result = await query<WebhookRecord & { similarity?: number }>(sql, queryParams);
     
     const enhancedWebhooks: Webhook[] = await Promise.all(
-      result.rows.map(async (record: WebhookRecord & { similarity: number }) => { // Explicitly type 'record'
+      result.rows.map(async (record: WebhookRecord & { similarity?: number }) => { // Explicitly type 'record'
         const baseWebhook = mapWebhookRecordToWebhook(record);
 
         // 1. Construct webhookUrl
