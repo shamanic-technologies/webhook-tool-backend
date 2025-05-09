@@ -47,7 +47,7 @@ const PARENT = `projects/${projectId}`;
 
 /**
  * Generates a GSM-compatible secret ID.
- * Format: <userType>_<userId>_<secretUtilityProvider>_<secretType>
+ * Format: <userType>_<userId>_<secretUtilityProvider>_<secretUtilitySubProvider>_<secretType>
  * Converts to lowercase.
  */
 const generateSecretId = (
@@ -57,12 +57,13 @@ const generateSecretId = (
     secretUtilitySubProvider: string,
     secretType: UtilitySecretType
 ): string => {
-    // Ensure all parts are strings and handle potential undefined/null - though types should prevent this
-    const parts = [userType, userId, secretUtilityProvider, secretUtilitySubProvider, secretType].map(part => String(part));
-    if (parts.some(part => !part || part === 'undefined' || part === 'null')) {
-        throw new Error(`Invalid components for generating secret ID: ${parts.join('_')}`);
-    }
-    return parts.join('_').toLowerCase();
+    const baseId = `${userType}_${userId}_${secretUtilityProvider}_${secretUtilitySubProvider}_${secretType}`;
+    // Sanitize the ID: replace invalid characters with a hyphen and convert to lowercase.
+    // Allowed characters are letters, numerals, hyphens, and underscores.
+    const sanitizedId = baseId.replace(/[^a-zA-Z0-9_-]/g, '-').toLowerCase();
+    
+    // Ensure the secret ID does not exceed 255 characters.
+    return sanitizedId.substring(0, 255);
 };
 
 // --- Internal Helper Functions --- 
@@ -164,10 +165,11 @@ export async function storeSecretGsm(
     userId: string, 
     secretUtilityProvider: UtilityProvider,
     secretType: UtilitySecretType, 
+    secretUtilitySubProvider: string,
     secretValue: string
 ): Promise<ServiceResponse<string>> {
     try {
-        const secretId = generateSecretId(userType, userId, secretUtilityProvider, secretType);
+        const secretId = generateSecretId(userType, userId, secretUtilityProvider, secretUtilitySubProvider, secretType);
         const secretName = `${PARENT}/secrets/${secretId}`;
         const valueToStore = secretValue; 
 
