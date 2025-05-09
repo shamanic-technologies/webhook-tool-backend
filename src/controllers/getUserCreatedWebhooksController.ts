@@ -23,11 +23,11 @@ export const getUserCreatedWebhooksController = async (req: AuthenticatedRequest
         // clientUserId is guaranteed to be a string by authMiddleware.
         const clientUserId = req.serviceCredentials!.clientUserId!;
 
-        // Call the updated service function
-        const results = await getUserCreatedWebhooksService(clientUserId); 
+        // Call the updated service function which now returns fully populated Webhook[]
+        const webhooksApp = await getUserCreatedWebhooksService(clientUserId); 
         
-        // Map the database records to the application Webhook type
-        const webhooksApp = results.map(mapWebhookRecordToWebhook);
+        // The mapping is now done within the service, no need for: 
+        // const webhooksApp = results.map(mapWebhookRecordToWebhook);
         
         // Prepare the success response
         const response: SuccessResponse<Webhook[]> = { success: true, data: webhooksApp };

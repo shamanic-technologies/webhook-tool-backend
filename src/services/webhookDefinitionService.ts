@@ -350,13 +350,13 @@ export const mapWebhookRecordToWebhook = (record: WebhookRecord): Webhook => {
 };
 
 /**
- * Retrieves all webhook definitions created by a specific client user.
+ * Retrieves all webhook definitions created by a specific client user, enhanced with linkage information.
  *
  * @param clientUserId The ID of the client user who created the webhooks.
- * @returns An array of WebhookRecords created by the user.
+ * @returns An array of fully populated Webhook objects.
  * @throws Error if database query fails.
  */
-export const getUserCreatedWebhooksService = async (clientUserId: string): Promise<WebhookRecord[]> => {
+export const getUserCreatedWebhooksService = async (clientUserId: string): Promise<Webhook[]> => {
     const sql = `
         SELECT *
         FROM webhooks
@@ -365,7 +365,38 @@ export const getUserCreatedWebhooksService = async (clientUserId: string): Promi
     `;
     try {
         const result = await query<WebhookRecord>(sql, [clientUserId]);
-        return result.rows;
+        
+        const enhancedWebhooks: Webhook[] = await Promise.all(
+            result.rows.map(async (record: WebhookRecord) => {
+                const baseWebhook = mapWebhookRecordToWebhook(record); // This already sets webhookUrl
+
+                // Get UserWebhook link details
+                const userLink = await userWebhookLinkService.findUserWebhook(baseWebhook.id, clientUserId);
+                const isLinkedToCurrentUser = !!userLink;
+                const currentUserWebhookStatus = userLink ? userLink.status : undefined;
+
+                // Check if linked to an agent
+                let linkedAgentId: string | undefined = undefined;
+                let isLinkedToAgent = false;
+                if (userLink && userLink.platform_user_id) {
+                    const agentLinkRecord = await agentWebhookLinkService.findAgentLink(baseWebhook.id, clientUserId, userLink.platform_user_id);
+                    if (agentLinkRecord && agentLinkRecord.agent_id) {
+                        linkedAgentId = agentLinkRecord.agent_id;
+                        isLinkedToAgent = true;
+                    }
+                }
+
+                return {
+                    ...baseWebhook,
+                    // webhookUrl is already set by mapWebhookRecordToWebhook
+                    isLinkedToCurrentUser,
+                    currentUserWebhookStatus,
+                    isLinkedToAgent,
+                    linkedAgentId,
+                };
+            })
+        );
+        return enhancedWebhooks;
     } catch (err) {
         console.error("Error retrieving user's created webhooks:", err);
         throw new Error(`Database error retrieving created webhooks: ${err instanceof Error ? err.message : String(err)}`);
