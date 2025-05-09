@@ -247,10 +247,10 @@ export const searchWebhooks = async (clientUserId: string, queryVector: number[]
  * @param subscribedEventId The unique event ID associated with the webhook URL.
  * @returns The WebhookRecord or null if not found.
  */
-export const getWebhookByProviderAndEvent = async (
+export const getWebhooksByProviderAndEvent = async (
     webhookProviderId: string,
     subscribedEventId: string
-): Promise<WebhookRecord | null> => {
+): Promise<WebhookRecord[]> => {
     const sql = `
         SELECT * 
         FROM webhooks 
@@ -258,7 +258,7 @@ export const getWebhookByProviderAndEvent = async (
     `;
     try {
         const result = await query<WebhookRecord>(sql, [webhookProviderId, subscribedEventId]);
-        return result.rows.length > 0 ? result.rows[0] : null;
+        return result.rows;
     } catch (err) {
         console.error("Error finding webhook by provider and event ID:", err);
         throw new Error(`Database error finding webhook definition: ${err instanceof Error ? err.message : String(err)}`);
@@ -303,6 +303,15 @@ export const mapWebhookRecordToWebhook = (record: WebhookRecord): Webhook => {
         eventPayloadSchema = {}; // Default to empty object on error
     }
 
+    // Construct webhookUrl, ensuring provider_id and event_id are present
+    const webhookUrl = (record.webhook_provider_id && record.subscribed_event_id)
+                       ? `${process.env.WEBHOOK_URL}/${record.webhook_provider_id}/${record.subscribed_event_id}`
+                       : 'invalid_url_missing_data'; // Or a more robust error/default handling
+
+    if (webhookUrl === 'invalid_url_missing_data') {
+        console.warn(`Could not construct webhookUrl for webhook ID ${record.id} due to missing provider or event ID. WEBHOOK_URL env: ${process.env.WEBHOOK_URL}`);
+    }
+
     return {
         id: record.id,
         name: record.name,
@@ -310,11 +319,10 @@ export const mapWebhookRecordToWebhook = (record: WebhookRecord): Webhook => {
         webhookProviderId: record.webhook_provider_id,
         subscribedEventId: record.subscribed_event_id,
         requiredSecrets: requiredSecrets,
-        // Use correct application-level field name
         clientUserIdentificationMapping: clientUserIdentificationMapping,
-        // Use correct application-level field name (maps from correct DB column)
         conversationIdIdentificationMapping: record.conversation_id_identification_mapping,
         eventPayloadSchema: eventPayloadSchema,
+        webhookUrl: webhookUrl, // Added to satisfy Webhook type
     };
 };
 

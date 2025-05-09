@@ -10,7 +10,6 @@ import {
   UserType,
   WebhookStatus,
   UtilitySecretType,
-  UtilityProvider,
   UserWebhook,
   UtilityInputSecret,
   UtilityActionConfirmation,
@@ -32,7 +31,6 @@ import { WebhookIdParamsSchema } from "../lib/schemas.js";
 import { formatValidationError } from "../lib/validationUtils.js";
 import { AuthenticatedRequest } from "../middleware/auth.js";
 import { appConfig } from "../index.js";
-import { z } from "zod";
 
 // Type guard to check if a UtilitySecretType is specifically a UtilityInputSecret
 function isUtilityInputSecret(
@@ -69,7 +67,7 @@ function _validateLinkUserRequest(
       errorResponse: {
         success: false,
         error: "Unauthorized",
-        message: "Client User ID header is required.",
+        details: "Client User ID header is required.",
       },
     } as LinkUserValidationResult;
   }
@@ -79,7 +77,7 @@ function _validateLinkUserRequest(
       errorResponse: {
         success: false,
         error: "Unauthorized",
-        message: "Platform User ID missing.",
+        details: "Platform User ID missing.",
       },
     } as LinkUserValidationResult;
   }
@@ -108,6 +106,7 @@ async function _checkWebhookSetupStatus(
     UserType.Client,
     clientUserId,
     webhook.webhookProviderId,
+    webhook.subscribedEventId,
     confirmationSecretDbType,
   );
   const isConfirmed =
@@ -146,6 +145,7 @@ async function _checkWebhookSetupStatus(
       UserType.Client,
       clientUserId,
       webhook.webhookProviderId,
+      webhook.subscribedEventId,
       secretTypeValue,
     );
 
@@ -168,6 +168,7 @@ async function _checkWebhookSetupStatus(
         UserType.Client,
         clientUserId,
         webhook.webhookProviderId,
+        webhook.subscribedEventId,
         secretTypeValue,
       );
       if (secretValueResult.success && secretValueResult.data.value !== null) {
@@ -190,6 +191,7 @@ async function _checkWebhookSetupStatus(
     const setupNeededData: SetupNeeded = {
       needsSetup: true,
       utilityProvider: webhook.webhookProviderId,
+      utilitySubProvider: webhook.subscribedEventId,
       title: `Webhook Setup Required for ${webhook.name}`,
       message: `Additional setup is needed...`,
       description: `Please provide missing secrets/confirm actions. Webhook URL: ${webhookUrlToInput}`,
@@ -226,7 +228,7 @@ export const linkUserController = async (
       return res.status(404).json({
         success: false,
         error: "Not Found",
-        message: "Webhook not found.",
+        details: "Webhook not found.",
       });
     }
     const webhook = mapWebhookRecordToWebhook(webhookRecord);
@@ -278,7 +280,7 @@ export const linkUserController = async (
         return res.status(500).json({
           success: false,
           error: "Internal Server Error",
-          message: "Failed to retrieve all required identification values.",
+          details: "Failed to retrieve all required identification values.",
         });
       }
 

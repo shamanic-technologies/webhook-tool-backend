@@ -10,10 +10,10 @@ importers:
     dependencies:
       '@agent-base/api-client':
         specifier: ^0.20.0
-        version: 0.20.0(@agent-base/types@0.15.0(react@19.1.0)(zod@3.24.4))(react@19.1.0)(zod@3.24.4)
+        version: 0.20.0(@agent-base/types@0.16.0(react@19.1.0)(zod@3.24.4))(react@19.1.0)(zod@3.24.4)
       '@agent-base/types':
-        specifier: ^0.15.0
-        version: 0.15.0(react@19.1.0)(zod@3.24.4)
+        specifier: ^0.16.0
+        version: 0.16.0(react@19.1.0)(zod@3.24.4)
       '@google-cloud/secret-manager':
         specifier: ^5.6.0
         version: 5.6.0
@@ -44,10 +44,10 @@ importers:
         version: 4.17.21
       '@types/node':
         specifier: ^20.17.31
-        version: 20.17.45
+        version: 20.17.46
       '@types/pg':
         specifier: ^8.11.14
-        version: 8.15.0
+        version: 8.15.1
       '@types/uuid':
         specifier: ^10.0.0
         version: 10.0.0
@@ -71,7 +71,7 @@ importers:
         version: 5.4.0(eslint-config-prettier@9.1.0(eslint@8.57.1))(eslint@8.57.1)(prettier@3.5.3)
       node-pg-migrate:
         specifier: ^7.9.1
-        version: 7.9.1(@types/pg@8.15.0)(pg@8.15.6)
+        version: 7.9.1(@types/pg@8.15.1)(pg@8.15.6)
       prettier:
         specifier: ^3.5.3
         version: 3.5.3
@@ -92,8 +92,8 @@ packages:
     peerDependencies:
       '@agent-base/types': 0.14.0
 
-  '@agent-base/types@0.15.0':
-    resolution: {integrity: sha512-pn7wdpGaC1BmqlJVPMThE0ASfMlToX6Y7SrzszdH1QRCYawBHgzOjoTjge4Z37RureenpiTxdW6P6wyD9DgWkg==}
+  '@agent-base/types@0.16.0':
+    resolution: {integrity: sha512-Z56VmSNL9FtQpYZu4+BzMDfgCZvkiDPW1HNqwSE6++k2pzF3HIjkh3tih/hBfm3XXc7k76q7zYnp87oSgty7Kg==}
 
   '@ai-sdk/provider-utils@2.2.8':
     resolution: {integrity: sha512-fqhG+4sCVv8x7nFzYnFo19ryhAa3w096Kmc3hWxMQfW/TubPOmt3A6tYZhl4mUfQWWQMsuSkLrtjlWuXBVSGQA==}
@@ -681,11 +681,11 @@ packages:
   '@types/mime@1.3.5':
     resolution: {integrity: sha512-/pyBZWSLD2n0dcHE3hq8s8ZvcETHtEuF+3E7XVt0Ig2nvsVQXdghHVcEkIWjy9A0wKfTn97a/PSDYohKIlnP/w==}
 
-  '@types/node@20.17.45':
-    resolution: {integrity: sha512-vO9+E1smq+149wsmmLdM8SKVW7gRzLjfo0mU7kiykhV6rL+GEUhUmW7VywJNSxJHQzt9QBIHEo+3SG4MrFTqbA==}
+  '@types/node@20.17.46':
+    resolution: {integrity: sha512-0PQHLhZPWOxGW4auogW0eOQAuNIlCYvibIpG67ja0TOJ6/sehu+1en7sfceUn+QQtx4Rk3GxbLNwPh0Cav7TWw==}
 
-  '@types/pg@8.15.0':
-    resolution: {integrity: sha512-JFxVIO0hZCbQXQGbRBQjbRWNCG3CujfEUBD4Ny2l0QqDyE0vqAPiMSyx0AIszMS0KdLZxz2GxZUUF3FBUXhOXA==}
+  '@types/pg@8.15.1':
+    resolution: {integrity: sha512-YKHrkGWBX5+ivzvOQ66I0fdqsQTsvxqM0AGP2i0XrVZ9DP5VA/deEbTf7VuLPGpY7fJB9uGbkZ6KjVhuHcrTkQ==}
 
   '@types/qs@6.9.18':
     resolution: {integrity: sha512-kK7dgTYDyGqS+e2Q4aK9X3D7q234CIZ1Bv0q/7Z5IwRDoADNU81xXJK/YVyLbLTZCoIwUoDoffFeF+p/eIklAA==}
@@ -2091,8 +2091,8 @@ packages:
     resolution: {integrity: sha512-SAzp/O4Yh02jGdRc+uIrGoe87dkN/XtwxfZ4ZyafJHymd79ozp5VG5nyZ7ygqPM5+cpLDjjGnYFUkngonyDPOQ==}
     engines: {node: '>=14.0.0'}
 
-  protobufjs@7.4.0:
-    resolution: {integrity: sha512-mRUWCc3KUU4w1jU8sGxICXH/gNS94DvI1gxqDvBzhj1JpcsimQkYiOJfwsPUykUI5ZaspFbSgmBLER8IrQ3tqw==}
+  protobufjs@7.5.1:
+    resolution: {integrity: sha512-3qx3IRjR9WPQKagdwrKjO3Gu8RgQR2qqw+1KnigWhoVjFqegIj1K3bP11sGqhxrO46/XL7lekuG4jmjL+4cLsw==}
     engines: {node: '>=12.0.0'}
 
   proxy-addr@2.0.7:
@@ -2637,9 +2637,9 @@ packages:
 
 snapshots:
 
-  '@agent-base/api-client@0.20.0(@agent-base/types@0.15.0(react@19.1.0)(zod@3.24.4))(react@19.1.0)(zod@3.24.4)':
+  '@agent-base/api-client@0.20.0(@agent-base/types@0.16.0(react@19.1.0)(zod@3.24.4))(react@19.1.0)(zod@3.24.4)':
     dependencies:
-      '@agent-base/types': 0.15.0(react@19.1.0)(zod@3.24.4)
+      '@agent-base/types': 0.16.0(react@19.1.0)(zod@3.24.4)
       ai: 4.3.15(react@19.1.0)(zod@3.24.4)
       axios: 1.9.0
     transitivePeerDependencies:
@@ -2647,7 +2647,7 @@ snapshots:
       - react
       - zod
 
-  '@agent-base/types@0.15.0(react@19.1.0)(zod@3.24.4)':
+  '@agent-base/types@0.16.0(react@19.1.0)(zod@3.24.4)':
     dependencies:
       '@types/json-schema': 7.0.15
       ai: 4.3.15(react@19.1.0)(zod@3.24.4)
@@ -2822,7 +2822,7 @@ snapshots:
     dependencies:
       lodash.camelcase: 4.3.0
       long: 5.3.2
-      protobufjs: 7.4.0
+      protobufjs: 7.5.1
       yargs: 17.7.2
 
   '@humanwhocodes/config-array@0.13.0':
@@ -2930,7 +2930,7 @@ snapshots:
       '@opentelemetry/sdk-logs': 0.53.0(@opentelemetry/api@1.9.0)
       '@opentelemetry/sdk-metrics': 1.26.0(@opentelemetry/api@1.9.0)
       '@opentelemetry/sdk-trace-base': 1.26.0(@opentelemetry/api@1.9.0)
-      protobufjs: 7.4.0
+      protobufjs: 7.5.1
 
   '@opentelemetry/propagator-b3@1.26.0(@opentelemetry/api@1.9.0)':
     dependencies:
@@ -3159,13 +3159,13 @@ snapshots:
   '@types/body-parser@1.19.5':
     dependencies:
       '@types/connect': 3.4.38
-      '@types/node': 20.17.45
+      '@types/node': 20.17.46
 
   '@types/caseless@0.12.5': {}
 
   '@types/connect@3.4.38':
     dependencies:
-      '@types/node': 20.17.45
+      '@types/node': 20.17.46
 
   '@types/diff-match-patch@1.0.36': {}
 
@@ -3173,7 +3173,7 @@ snapshots:
 
   '@types/express-serve-static-core@4.19.6':
     dependencies:
-      '@types/node': 20.17.45
+      '@types/node': 20.17.46
       '@types/qs': 6.9.18
       '@types/range-parser': 1.2.7
       '@types/send': 0.17.4
@@ -3193,13 +3193,13 @@ snapshots:
 
   '@types/mime@1.3.5': {}
 
-  '@types/node@20.17.45':
+  '@types/node@20.17.46':
     dependencies:
       undici-types: 6.19.8
 
-  '@types/pg@8.15.0':
+  '@types/pg@8.15.1':
     dependencies:
-      '@types/node': 20.17.45
+      '@types/node': 20.17.46
       pg-protocol: 1.9.5
       pg-types: 4.0.2
 
@@ -3210,19 +3210,19 @@ snapshots:
   '@types/request@2.48.12':
     dependencies:
       '@types/caseless': 0.12.5
-      '@types/node': 20.17.45
+      '@types/node': 20.17.46
       '@types/tough-cookie': 4.0.5
       form-data: 2.5.3
 
   '@types/send@0.17.4':
     dependencies:
       '@types/mime': 1.3.5
-      '@types/node': 20.17.45
+      '@types/node': 20.17.46
 
   '@types/serve-static@1.15.7':
     dependencies:
       '@types/http-errors': 2.0.4
-      '@types/node': 20.17.45
+      '@types/node': 20.17.46
       '@types/send': 0.17.4
 
   '@types/stylis@4.2.5': {}
@@ -4058,7 +4058,7 @@ snapshots:
       node-fetch: 2.7.0
       object-hash: 3.0.0
       proto3-json-serializer: 2.0.2
-      protobufjs: 7.4.0
+      protobufjs: 7.5.1
       retry-request: 7.0.2
       uuid: 9.0.1
     transitivePeerDependencies:
@@ -4395,13 +4395,13 @@ snapshots:
     dependencies:
       whatwg-url: 5.0.0
 
-  node-pg-migrate@7.9.1(@types/pg@8.15.0)(pg@8.15.6):
+  node-pg-migrate@7.9.1(@types/pg@8.15.1)(pg@8.15.6):
     dependencies:
       glob: 11.0.2
       pg: 8.15.6
       yargs: 17.7.2
     optionalDependencies:
-      '@types/pg': 8.15.0
+      '@types/pg': 8.15.1
 
   node-readfiles@0.2.0:
     dependencies:
@@ -4644,9 +4644,9 @@ snapshots:
 
   proto3-json-serializer@2.0.2:
     dependencies:
-      protobufjs: 7.4.0
+      protobufjs: 7.5.1
 
-  protobufjs@7.4.0:
+  protobufjs@7.5.1:
     dependencies:
       '@protobufjs/aspromise': 1.1.2
       '@protobufjs/base64': 1.1.2
@@ -4658,7 +4658,7 @@ snapshots:
       '@protobufjs/path': 1.1.2
       '@protobufjs/pool': 1.1.0
       '@protobufjs/utf8': 1.1.0
-      '@types/node': 20.17.45
+      '@types/node': 20.17.46
       long: 5.3.2
 
   proxy-addr@2.0.7:

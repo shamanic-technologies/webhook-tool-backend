@@ -10,8 +10,7 @@ export const formatValidationError = (error: ZodError): ErrorResponse => {
     const details = error.errors.map(e => `${e.path.join('.')} - ${e.message}`).join('; ');
     return {
         success: false,
-        error: 'Validation Error',
-        message: 'Invalid request input.',
+        error: 'Invalid request input',
         details: details
     };
 }; 

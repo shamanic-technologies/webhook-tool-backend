@@ -7,6 +7,7 @@ import {
   ServiceResponse,
   SuccessResponse,
   UtilityProvider,
+  ErrorResponse,
 } from "@agent-base/types";
 import {
   createWebhookService,
@@ -55,8 +56,8 @@ export const createWebhookController = async (
         return res.status(400).json({
           success: false,
           error: "Validation Error",
-          message: `Secret '${secretTypeNeededForMapping}' is used in clientUserIdentificationMapping but not listed in requiredSecrets.`,
-        });
+          details: `Secret '${secretTypeNeededForMapping}' is used in clientUserIdentificationMapping but not listed in requiredSecrets.`,
+        } as ErrorResponse);
       }
     }
 

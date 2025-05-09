@@ -54,10 +54,11 @@ const generateSecretId = (
     userType: UserType,
     userId: string, 
     secretUtilityProvider: UtilityProvider, 
+    secretUtilitySubProvider: string,
     secretType: UtilitySecretType
 ): string => {
     // Ensure all parts are strings and handle potential undefined/null - though types should prevent this
-    const parts = [userType, userId, secretUtilityProvider, secretType].map(part => String(part));
+    const parts = [userType, userId, secretUtilityProvider, secretUtilitySubProvider, secretType].map(part => String(part));
     if (parts.some(part => !part || part === 'undefined' || part === 'null')) {
         throw new Error(`Invalid components for generating secret ID: ${parts.join('_')}`);
     }
@@ -224,10 +225,11 @@ export async function checkSecretExistsGsm(
     userType: UserType, 
     userId: string, 
     secretUtilityProvider: UtilityProvider, 
+    secretUtilitySubProvider: string,
     secretType: UtilitySecretType
 ): Promise<ServiceResponse<SecretExists>> {
     try {
-        const secretId = generateSecretId(userType, userId, secretUtilityProvider, secretType);
+        const secretId = generateSecretId(userType, userId, secretUtilityProvider, secretUtilitySubProvider, secretType);
         const name = `${PARENT}/secrets/${secretId}`;
 
         try {
@@ -257,11 +259,12 @@ export async function checkSecretExistsGsm(
 export async function getSecretGsm(
     userType: UserType, 
     userId: string, 
-    secretUtilityProvider: UtilityProvider, 
+    secretUtilityProvider: UtilityProvider,
+    secretUtilitySubProvider: string,
     secretType: UtilitySecretType
 ): Promise<ServiceResponse<SecretValue>> {
     try {
-        const secretId = generateSecretId(userType, userId, secretUtilityProvider, secretType);
+        const secretId = generateSecretId(userType, userId, secretUtilityProvider, secretUtilitySubProvider, secretType);
         const name = `${PARENT}/secrets/${secretId}/versions/latest`;
         console.log(`DEBUG: getSecretGsm - Attempting to fetch secret version: ${name}`);
         try {

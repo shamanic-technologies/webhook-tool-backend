@@ -10,9 +10,9 @@ import {
     Webhook,
     WebhookResolutionRequest
 } from '@agent-base/types';
-import { UserWebhookRecord, WebhookAgentLinkRecord } from '../types/db.js';
+import { UserWebhookRecord, WebhookAgentLinkRecord, WebhookRecord } from '../types/db.js';
 import {
-    getWebhookByProviderAndEvent,
+    getWebhooksByProviderAndEvent,
     mapWebhookRecordToWebhook
 } from '../services/webhookDefinitionService.js';
 import {
@@ -27,19 +27,33 @@ import { appConfig } from '../index.js';
 
 // --- Helper: Find Webhook Definition --- 
 // Accept string for webhookProviderId as it comes from URL params
-async function _findAndValidateWebhookDefinition(webhookProviderId: string, subscribedEventId: string): Promise<Webhook | null> {
-    const webhookRecord = await getWebhookByProviderAndEvent(webhookProviderId, subscribedEventId);
-    if (!webhookRecord) {
-        console.warn(`Webhook definition not found for provider ${webhookProviderId}, event ${subscribedEventId}`);
-        return null;
+async function _findResolvedWebhooks(webhookProviderId: string, subscribedEventId: string): Promise<Webhook[]> {
+    const resultFromService = await getWebhooksByProviderAndEvent(webhookProviderId, subscribedEventId);
+    if (!resultFromService || (Array.isArray(resultFromService) && resultFromService.length === 0)) {
+        console.warn(`Webhook definition not found or empty for provider ${webhookProviderId}, event ${subscribedEventId}`);
+        return []; // Return an empty array, fulfilling the Promise<Webhook[]> contract.
     }
-    // mapWebhookRecordToWebhook returns the correct Webhook type
-    return mapWebhookRecordToWebhook(webhookRecord);
+    const webhooksRecordArray: WebhookRecord[] = Array.isArray(resultFromService)
+        ? resultFromService
+        : [resultFromService as WebhookRecord]; // Cast to WebhookRecord if it's a single item, then wrap.
+    return webhooksRecordArray.map(mapWebhookRecordToWebhook);
 }
 
 // --- Helper: Extract & Hash Identifiers --- 
 // Returns { hash: string } on success, or ErrorResponse on failure
 function _extractAndHashIdentifiers(webhook: Webhook, payload: any): { hash: string } | ErrorResponse {
+    // Ensure that clientUserIdentificationMapping exists before trying to access its keys.
+    // This mapping is crucial for identifying the user from the webhook payload.
+    if (!webhook.clientUserIdentificationMapping) {
+        console.error(`Webhook definition (ID: ${webhook.id}) is missing 'clientUserIdentificationMapping'. This object is required to define how user identifiers are extracted from the payload.`);
+        return {
+                success: false,
+                error: 'Webhook Configuration Error',
+                details: `The webhook definition (ID: ${webhook.id}) is misconfigured. It's missing the 'clientUserIdentificationMapping' object.`,
+                hint: `Update the webhook definition (ID: ${webhook.id}) to include a 'clientUserIdentificationMapping' object that specifies the JSONPaths to the user identifiers within the payload.`
+            } as ErrorResponse;
+    }
+
     const identifierValues: Record<string, any> = {};
     const requiredSecretsForIdentification = Object.keys(webhook.clientUserIdentificationMapping) as UtilitySecretType[];
 
@@ -129,9 +143,10 @@ export const resolveWebhookController = async (req: Request, res: Response, next
                 hint: "Ensure your request body to the /resolve endpoint includes: a 'webhookProviderId' (string), a 'subscribedEventId' (string), and a 'payload' (JSON object)."
             } as ErrorResponse);
         }
-        
-        const webhook = await _findAndValidateWebhookDefinition(webhookProviderId, subscribedEventId);
-        if (!webhook) {
+        console.log(`Resolving webhooks for provider ${webhookProviderId} and event ${subscribedEventId}`);
+        console.log(`Payload:`, JSON.stringify(payload, null, 2));
+        const webhooks : Webhook[] = await _findResolvedWebhooks(webhookProviderId, subscribedEventId);
+        if (webhooks.length === 0) {
              // Corrected to send HTTP response directly
              return res.status(404).json({
                 success: false,
@@ -140,26 +155,41 @@ export const resolveWebhookController = async (req: Request, res: Response, next
                 hint: "Verify that a webhook definition exists and is correctly configured in the system for this provider and event ID. You may need to create or update the webhook definition with these identifiers."
             } as ErrorResponse);
         }
+        let resolvedWebhooks : {webhook: Webhook, linkResult: { userLink: UserWebhookRecord, agentLink: WebhookAgentLinkRecord }}[] = [];
+        // Loop through all webhooks and try to resolve each one
+        for (const webhook of webhooks) {
+            console.log(`Resolving webhook ${webhook.id}`);
+            const hashResult = _extractAndHashIdentifiers(webhook, payload);
+            // Check if hashResult is an ErrorResponse by looking for the 'error' property
+            if ('error' in hashResult) {
+                console.error(`Error extracting and hashing identifiers for webhook ${webhook.id}:`, hashResult);
+                const errorResponse = hashResult as ErrorResponse;
+                const statusCode = (errorResponse.error === 'Internal Server Error' || errorResponse.error === 'Webhook Configuration Error') ? 500 : 400;
+                return res.status(statusCode).json(errorResponse);
+            }
+            // If not an error, hashResult is { hash: string }, so hashResult.hash is safe to access
+            const identificationHash = hashResult.hash;
 
-        const hashResult = _extractAndHashIdentifiers(webhook, payload);
-        // Check if hashResult is an ErrorResponse by looking for the 'error' property
-        if ('error' in hashResult) {
-            const errorResponse = hashResult as ErrorResponse;
-            const statusCode = (errorResponse.error === 'Internal Server Error' || errorResponse.error === 'Webhook Configuration Error') ? 500 : 400;
-            return res.status(statusCode).json(errorResponse);
+            const linkResult = await _findUserAndAgentLinks(webhook.id, identificationHash, webhookProviderId, subscribedEventId);
+            // Check if linkResult is an ErrorResponse by looking for the 'error' property
+            if (!('error' in linkResult)) {
+                resolvedWebhooks.push({webhook,linkResult});
+            }
+            console.log(`Could not resolve webhook ${webhook.id} with linkResult:`, linkResult);
         }
-        // If not an error, hashResult is { hash: string }, so hashResult.hash is safe to access
-        const identificationHash = hashResult.hash;
+        if (resolvedWebhooks.length === 0) {
+            return res.status(404).json({
+                success: false,
+                error: 'Not Found',
+                details: `No webhook was resolved for provider ID '${webhookProviderId}' and event ID '${subscribedEventId}'.`,
+            } as ErrorResponse);
+        }
+        
+        if (resolvedWebhooks.length > 1) {
+            resolvedWebhooks = [resolvedWebhooks[0]];
+        }
 
-        const linkResult = await _findUserAndAgentLinks(webhook.id, identificationHash, webhookProviderId, subscribedEventId);
-        // Check if linkResult is an ErrorResponse by looking for the 'error' property
-        if ('error' in linkResult) {
-            const errorResponse = linkResult as ErrorResponse;
-            const statusCode = errorResponse.error === 'Forbidden' ? 403 : (errorResponse.error === 'Not Found' ? 404 : 500);
-            return res.status(statusCode).json(errorResponse);
-        }
-        // If not an error, linkResult is { userLink: ..., agentLink: ... }
-        // userLink and agentLink are guaranteed to be present due to the structure of the success return type
+        const { webhook, linkResult } = resolvedWebhooks[0];
         const { client_user_id: clientUserId, platform_user_id: platformUserId } = linkResult.userLink;
         const { agent_id: agentId } = linkResult.agentLink;
 
