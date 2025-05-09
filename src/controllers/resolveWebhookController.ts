@@ -174,8 +174,9 @@ export const resolveWebhookController = async (req: Request, res: Response, next
             // Check if linkResult is an ErrorResponse by looking for the 'error' property
             if (!('error' in linkResult)) {
                 resolvedWebhooks.push({webhook,linkResult});
+            } else {
+                console.log(`Could not resolve webhook ${webhook.id} with linkResult:`, linkResult);
             }
-            console.log(`Could not resolve webhook ${webhook.id} with linkResult:`, linkResult);
         }
         if (resolvedWebhooks.length === 0) {
             return res.status(404).json({
