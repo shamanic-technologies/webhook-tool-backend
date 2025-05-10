@@ -28,15 +28,12 @@ import { appConfig } from '../index.js';
 // --- Helper: Find Webhook Definition --- 
 // Accept string for webhookProviderId as it comes from URL params
 async function _findResolvedWebhooks(webhookProviderId: string, subscribedEventId: string): Promise<Webhook[]> {
-    const resultFromService = await getWebhooksByProviderAndEvent(webhookProviderId, subscribedEventId);
+    const resultFromService : Webhook[] | null = await getWebhooksByProviderAndEvent(webhookProviderId, subscribedEventId);
     if (!resultFromService || (Array.isArray(resultFromService) && resultFromService.length === 0)) {
         console.warn(`Webhook definition not found or empty for provider ${webhookProviderId}, event ${subscribedEventId}`);
         return []; // Return an empty array, fulfilling the Promise<Webhook[]> contract.
     }
-    const webhooksRecordArray: WebhookRecord[] = Array.isArray(resultFromService)
-        ? resultFromService
-        : [resultFromService as WebhookRecord]; // Cast to WebhookRecord if it's a single item, then wrap.
-    return webhooksRecordArray.map(mapWebhookRecordToWebhook);
+    return resultFromService;
 }
 
 // --- Helper: Extract & Hash Identifiers --- 

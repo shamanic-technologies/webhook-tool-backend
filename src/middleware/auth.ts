@@ -9,7 +9,7 @@ import { ServiceCredentials, ErrorResponse } from '@agent-base/types';
 
 // Define a custom request type that includes the credentials
 export interface AuthenticatedRequest extends Request {
-  serviceCredentials?: ServiceCredentials;
+  serviceCredentials: ServiceCredentials;
 }
 
 // Constants for header names (consider making these configurable)
@@ -30,10 +30,10 @@ const HEADER_AGENT_ID = 'x-agent-id'; // Optional depending on endpoint needs
  * If required headers are missing or invalid, sends a 401 Unauthorized response.
  * Otherwise, attaches credentials to `req.serviceCredentials` and calls `next()`.
  */
-export const authMiddleware = (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+export const authMiddleware = (req: Request, res: Response, next: NextFunction) => {
   const platformApiKey = req.headers[HEADER_PLATFORM_API_KEY] as string;
   const platformUserId = req.headers[HEADER_PLATFORM_USER_ID] as string;
-  const clientUserId = req.headers[HEADER_CLIENT_USER_ID] as string | undefined;
+  const clientUserId = req.headers[HEADER_CLIENT_USER_ID] as string;
   const agentId = req.headers[HEADER_AGENT_ID] as string | undefined;
 
   // Basic validation: Check for required headers
@@ -46,7 +46,7 @@ export const authMiddleware = (req: AuthenticatedRequest, res: Response, next: N
     const errorResponse: ErrorResponse = {
       success: false,
       error: 'Unauthorized',
-      message: `Missing required headers: ${missingHeaders.join(', ')}`,
+      details: `Missing required headers: ${missingHeaders.join(', ')}`,
     };
     return res.status(401).json(errorResponse);
   }
@@ -54,7 +54,7 @@ export const authMiddleware = (req: AuthenticatedRequest, res: Response, next: N
   // Attach credentials to the request object
   // Note: Further validation (e.g., checking API key validity against a database)
   // would typically happen here or in a dedicated service.
-  req.serviceCredentials = {
+  (req as AuthenticatedRequest).serviceCredentials = {
     platformApiKey,
     platformUserId,
     clientUserId, // Now guaranteed to be present

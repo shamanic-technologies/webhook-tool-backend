@@ -1,7 +1,7 @@
 /**
  * Controller: Link User to Webhook
  */
-import { Response, NextFunction } from "express";
+import { Response, NextFunction, Request } from "express";
 import {
   Webhook,
   ServiceResponse,
@@ -51,7 +51,7 @@ interface LinkUserValidationResult {
 }
 
 function _validateLinkUserRequest(
-  req: AuthenticatedRequest,
+  req: Request,
 ): LinkUserValidationResult {
   const paramsValidation = WebhookIdParamsSchema.safeParse(req.params);
   if (!paramsValidation.success) {
@@ -61,7 +61,7 @@ function _validateLinkUserRequest(
   }
   const { webhookId } = paramsValidation.data;
 
-  const clientUserId = req.serviceCredentials?.clientUserId;
+  const clientUserId = (req as AuthenticatedRequest).serviceCredentials?.clientUserId;
   if (!clientUserId) {
     return {
       errorResponse: {
@@ -71,7 +71,7 @@ function _validateLinkUserRequest(
       },
     } as LinkUserValidationResult;
   }
-  const platformUserId = req.serviceCredentials?.platformUserId;
+  const platformUserId = (req as AuthenticatedRequest).serviceCredentials?.platformUserId;
   if (!platformUserId) {
     return {
       errorResponse: {
@@ -211,7 +211,7 @@ async function _checkWebhookSetupStatus(
 
 // --- Controller: linkUserController ---
 export const linkUserController = async (
-  req: AuthenticatedRequest,
+  req: Request,
   res: Response<ServiceResponse<UserWebhook | SetupNeeded>>,
   next: NextFunction,
 ) => {
@@ -223,15 +223,14 @@ export const linkUserController = async (
     }
     const { webhookId, clientUserId, platformUserId } = validation;
 
-    const webhookRecord = await getWebhookByIdService(webhookId);
-    if (!webhookRecord) {
+    const webhook = await getWebhookByIdService(webhookId);
+    if (!webhook) {
       return res.status(404).json({
         success: false,
         error: "Not Found",
         details: "Webhook not found.",
       });
     }
-    const webhook = mapWebhookRecordToWebhook(webhookRecord);
 
     let userWebhookRecord = await findUserWebhookService(
       webhookId,

@@ -1,7 +1,7 @@
 /**
  * Controller: Link Agent to User Webhook
  */
-import { Response, NextFunction } from 'express';
+import { Response, NextFunction, Request } from 'express';
 import { 
     WebhookAgentLink, 
     ServiceResponse, 
@@ -21,7 +21,7 @@ import { validate as uuidValidate } from 'uuid';
 /**
  * Controller for POST /:webhookId/link-agent - Link a webhook to an agent.
  */
-export const linkAgentController = async (req: AuthenticatedRequest, res: Response<ServiceResponse<WebhookAgentLink>>, next: NextFunction) => {
+export const linkAgentController = async (req: Request, res: Response<ServiceResponse<WebhookAgentLink>>, next: NextFunction) => {
     console.log('>>> Entering linkAgentController');
     try {
         const paramsValidation = WebhookIdParamsSchema.safeParse(req.params);
@@ -40,30 +40,29 @@ export const linkAgentController = async (req: AuthenticatedRequest, res: Respon
             console.error(`[Controller Error] Link Agent: Invalid agentId format: ${agentId}`);
             return res.status(400).json({
                 success: false,
-                error: 'Validation Error',
-                message: 'Invalid agentId format.',
+                error: 'Invalid agentId format.',
                 details: 'The provided agentId does not match the expected UUID format.'
             });
         }
 
-        const clientUserId = req.serviceCredentials?.clientUserId;
+        const clientUserId = (req as AuthenticatedRequest).serviceCredentials?.clientUserId;
         if (!clientUserId) {
-            return res.status(401).json({ success: false, error: 'Unauthorized', message: 'Client User ID header is required.' });
+            return res.status(401).json({ success: false, error: 'Unauthorized', details: 'Client User ID header is required.' });
         }
         // Also get platformUserId
-        const platformUserId = req.serviceCredentials?.platformUserId;
+        const platformUserId = (req as AuthenticatedRequest).serviceCredentials?.platformUserId;
         if (!platformUserId) {
             // Add check for platformUserId as it's needed for the service
-             return res.status(401).json({ success: false, error: 'Unauthorized', message: 'Platform User ID header is required.' });
+             return res.status(401).json({ success: false, error: 'Unauthorized', details: 'Platform User ID header is required.' });
         }
 
         // Ensure user webhook link exists and is active first
         const userWebhookRecord = await findUserWebhookService(webhookId, clientUserId);
         if (!userWebhookRecord) {
-             return res.status(404).json({ success: false, error: 'Not Found', message: 'User is not linked to this webhook.' });
+             return res.status(404).json({ success: false, error: 'Not Found', details: 'User is not linked to this webhook.' });
         }
         if (userWebhookRecord.status !== WebhookStatus.ACTIVE) {
-             return res.status(400).json({ success: false, error: 'Bad Request', message: 'Webhook link for user is not active. Cannot link agent.' });
+             return res.status(400).json({ success: false, error: 'Bad Request', details: 'Webhook link for user is not active. Cannot link agent.' });
         }
 
         // Pass platformUserId to the service function

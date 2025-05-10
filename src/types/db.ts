@@ -25,6 +25,7 @@ export interface WebhookRecord {
     conversation_id_identification_mapping: string; // Added (Stored as TEXT in PG)
     event_payload_schema: Record<string, unknown>; // Stored as JSONB in PG
     embedding?: number[]; // Assuming numeric vector, adjust if needed
+    creator_client_user_id: string; // Added: ID of the user who created this webhook definition
     created_at: Date;
     updated_at: Date;
 }

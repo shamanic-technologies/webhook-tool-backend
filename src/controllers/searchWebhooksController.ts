@@ -1,7 +1,7 @@
 /**
  * Controller: Search Webhooks
  */
-import { Response, NextFunction } from 'express';
+import { Response, NextFunction, Request } from 'express';
 import { 
     Webhook, 
     ServiceResponse, 
@@ -18,11 +18,11 @@ import { AuthenticatedRequest } from '../middleware/auth.js';
 /**
  * Controller for POST /search - Search for webhooks.
  */
-export const searchWebhooksController = async (req: AuthenticatedRequest, res: Response<ServiceResponse<Webhook[]>>, next: NextFunction) => {
+export const searchWebhooksController = async (req: Request, res: Response<ServiceResponse<Webhook[]>>, next: NextFunction) => {
     console.log('>>> Entering searchWebhooksController');
     try {
         // clientUserId is guaranteed to be a string by authMiddleware after its checks.
-        const clientUserId = req.serviceCredentials!.clientUserId!;
+        const clientUserId = (req as AuthenticatedRequest).serviceCredentials!.clientUserId!;
 
         const validationResult = SearchWebhookSchema.safeParse(req.body);
         if (!validationResult.success) {

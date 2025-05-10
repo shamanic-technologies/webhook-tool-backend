@@ -64,11 +64,11 @@ const _validatePathInSchema = (schema: any, path: string): boolean => {
  * @returns The newly created WebhookRecord.
  * @throws Error if database insertion fails.
  */
-export const createWebhookService = async (
+export const createWebhook = async (
     webhookData: WebhookData, // Uses application-level type
     embedding: number[],
     clientUserId: string // Add clientUserId parameter
-): Promise<WebhookRecord> => {
+): Promise<Webhook> => {
     const newId = uuidv4(); // Use a different variable name than the type
     const {
       name, 
@@ -149,7 +149,7 @@ export const createWebhookService = async (
       if (result.rows.length === 0) {
         throw new Error("Failed to create webhook definition, INSERT query returned no rows.");
       }
-      return result.rows[0];
+      return mapWebhookRecordToWebhook(result.rows[0]);
     } catch (err) {
       console.error("Error creating webhook definition:", err);
       throw new Error(`Database error creating webhook definition: ${err instanceof Error ? err.message : String(err)}`);
@@ -163,7 +163,7 @@ export const createWebhookService = async (
  * @returns The WebhookRecord or null if not found.
  * @throws Error if database query fails.
  */
-export const getWebhookById = async (id: string): Promise<WebhookRecord | null> => {
+export const getWebhookById = async (id: string): Promise<Webhook | null> => {
   const sql = "SELECT * FROM webhooks WHERE id = $1";
   try {
     const result = await query<WebhookRecord>(sql, [id]);
@@ -171,7 +171,7 @@ export const getWebhookById = async (id: string): Promise<WebhookRecord | null> 
       return null;
     }
     // TODO: Consider parsing JSON fields here if needed immediately, though mapping does it
-    return result.rows[0];
+    return mapWebhookRecordToWebhook(result.rows[0]);
   } catch (err) {
     console.error("Error retrieving webhook by ID:", err);
     throw new Error(`Database error retrieving webhook: ${err instanceof Error ? err.message : String(err)}`);
@@ -273,7 +273,7 @@ export const searchWebhooks = async (clientUserId: string, queryVector: number[]
 export const getWebhooksByProviderAndEvent = async (
     webhookProviderId: string,
     subscribedEventId: string
-): Promise<WebhookRecord[]> => {
+): Promise<Webhook[]> => {
     const sql = `
         SELECT * 
         FROM webhooks 
@@ -281,7 +281,7 @@ export const getWebhooksByProviderAndEvent = async (
     `;
     try {
         const result = await query<WebhookRecord>(sql, [webhookProviderId, subscribedEventId]);
-        return result.rows;
+        return result.rows.map(mapWebhookRecordToWebhook);
     } catch (err) {
         console.error("Error finding webhook by provider and event ID:", err);
         throw new Error(`Database error finding webhook definition: ${err instanceof Error ? err.message : String(err)}`);
@@ -346,6 +346,7 @@ export const mapWebhookRecordToWebhook = (record: WebhookRecord): Webhook => {
         conversationIdIdentificationMapping: record.conversation_id_identification_mapping,
         eventPayloadSchema: eventPayloadSchema,
         webhookUrl: webhookUrl, // Added to satisfy Webhook type
+        creatorClientUserId: record.creator_client_user_id,
     };
 };
 

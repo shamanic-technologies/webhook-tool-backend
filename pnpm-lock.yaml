@@ -10,10 +10,10 @@ importers:
     dependencies:
       '@agent-base/api-client':
         specifier: ^0.20.0
-        version: 0.20.0(@agent-base/types@0.16.0(react@19.1.0)(zod@3.24.4))(react@19.1.0)(zod@3.24.4)
+        version: 0.20.0(@agent-base/types@0.18.0(react@19.1.0)(zod@3.24.4))(react@19.1.0)(zod@3.24.4)
       '@agent-base/types':
-        specifier: ^0.16.0
-        version: 0.16.0(react@19.1.0)(zod@3.24.4)
+        specifier: ^0.18.0
+        version: 0.18.0(react@19.1.0)(zod@3.24.4)
       '@google-cloud/secret-manager':
         specifier: ^5.6.0
         version: 5.6.0
@@ -92,8 +92,8 @@ packages:
     peerDependencies:
       '@agent-base/types': 0.14.0
 
-  '@agent-base/types@0.16.0':
-    resolution: {integrity: sha512-Z56VmSNL9FtQpYZu4+BzMDfgCZvkiDPW1HNqwSE6++k2pzF3HIjkh3tih/hBfm3XXc7k76q7zYnp87oSgty7Kg==}
+  '@agent-base/types@0.18.0':
+    resolution: {integrity: sha512-4t0H9ufrr3iccJ7WCq3EbWK1lC5gQAnSR+lzI1/3UIebV+arvQT1oze4gXAT43mQRMVFg+nkqZGzOX5U+Cya5Q==}
 
   '@ai-sdk/provider-utils@2.2.8':
     resolution: {integrity: sha512-fqhG+4sCVv8x7nFzYnFo19ryhAa3w096Kmc3hWxMQfW/TubPOmt3A6tYZhl4mUfQWWQMsuSkLrtjlWuXBVSGQA==}
@@ -2637,9 +2637,9 @@ packages:
 
 snapshots:
 
-  '@agent-base/api-client@0.20.0(@agent-base/types@0.16.0(react@19.1.0)(zod@3.24.4))(react@19.1.0)(zod@3.24.4)':
+  '@agent-base/api-client@0.20.0(@agent-base/types@0.18.0(react@19.1.0)(zod@3.24.4))(react@19.1.0)(zod@3.24.4)':
     dependencies:
-      '@agent-base/types': 0.16.0(react@19.1.0)(zod@3.24.4)
+      '@agent-base/types': 0.18.0(react@19.1.0)(zod@3.24.4)
       ai: 4.3.15(react@19.1.0)(zod@3.24.4)
       axios: 1.9.0
     transitivePeerDependencies:
@@ -2647,7 +2647,7 @@ snapshots:
       - react
       - zod
 
-  '@agent-base/types@0.16.0(react@19.1.0)(zod@3.24.4)':
+  '@agent-base/types@0.18.0(react@19.1.0)(zod@3.24.4)':
     dependencies:
       '@types/json-schema': 7.0.15
       ai: 4.3.15(react@19.1.0)(zod@3.24.4)
