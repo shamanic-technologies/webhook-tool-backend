@@ -194,6 +194,18 @@ Authentication:
 *   **Body:** `{ "agentId": string }` (agentId must be a valid UUID)
 *   **Response:** `ServiceResponse<WebhookAgentLink>`
 
+**`POST /api/v1/webhooks/:webhookId/test`** (Test Webhook Execution)
+
+*   Tests the execution flow for a given webhook, simulating an incoming event and checking if it resolves to an agent and extracts necessary information. This is useful for verifying configuration and secret setup.
+*   **Headers:**
+    *   `x-platform-api-key: YOUR_PLATFORM_API_KEY`
+    *   `x-platform-user-id: YOUR_PLATFORM_USER_ID`
+    *   `x-client-user-id: YOUR_CLIENT_USER_ID`
+*   **Params:** `:webhookId` (UUID)
+*   **Body:** None
+*   **Response:** `ServiceResponse<WebhookTestResult>`
+    *   `WebhookTestResult` contains details about the test execution, including whether it was successful, any errors encountered, and resolved identifiers.
+
 **`POST /api/v1/webhooks/resolve/:webhookProviderId/:subscribedEventId`** (Resolve Incoming Webhook)
 
 *   Used internally by a gateway to find the linked agent(s) for an incoming webhook event.
