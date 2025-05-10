@@ -150,7 +150,7 @@ export const createWebhook = async (
       if (result.rows.length === 0) {
         throw new Error("Failed to create webhook definition, INSERT query returned no rows.");
       }
-      return mapWebhookRecordToWebhook(result.rows[0]);
+      return mapWebhookRecordToWebhook(result.rows[0], clientUserId);
     } catch (err) {
       console.error("Error creating webhook definition:", err);
       throw new Error(`Database error creating webhook definition: ${err instanceof Error ? err.message : String(err)}`);
@@ -164,7 +164,7 @@ export const createWebhook = async (
  * @returns The WebhookRecord or null if not found.
  * @throws Error if database query fails.
  */
-export const getWebhookById = async (id: string): Promise<Webhook | null> => {
+export const getWebhookById = async (id: string, clientUserId: string): Promise<Webhook | null> => {
   const sql = "SELECT * FROM webhooks WHERE id = $1";
   try {
     const result = await query<WebhookRecord>(sql, [id]);
@@ -172,7 +172,7 @@ export const getWebhookById = async (id: string): Promise<Webhook | null> => {
       return null;
     }
     // TODO: Consider parsing JSON fields here if needed immediately, though mapping does it
-    return mapWebhookRecordToWebhook(result.rows[0]);
+    return mapWebhookRecordToWebhook(result.rows[0], clientUserId);
   } catch (err) {
     console.error("Error retrieving webhook by ID:", err);
     throw new Error(`Database error retrieving webhook: ${err instanceof Error ? err.message : String(err)}`);
@@ -220,7 +220,7 @@ export const searchWebhooks = async (clientUserId: string, queryVector: number[]
     
     const enhancedWebhooks: Webhook[] = await Promise.all(
       result.rows.map(async (record: WebhookRecord & { similarity?: number }) => { // Explicitly type 'record'
-        const baseWebhook = mapWebhookRecordToWebhook(record); // webhookUrl is now undefined here
+        const baseWebhook = mapWebhookRecordToWebhook(record, clientUserId); // webhookUrl is now undefined here
 
         // Construct webhookUrl here as clientUserId is available
         let webhookUrl: string | undefined = undefined;
@@ -238,11 +238,11 @@ export const searchWebhooks = async (clientUserId: string, queryVector: number[]
         // 3. Check if linked to an agent (in the context of this user)
         let linkedAgentId: string | undefined = undefined;
         let isLinkedToAgent = false; // Default to false, will become true if an agent is linked
-        // Ensure userLink and its platform_user_id are valid before proceeding
-        if (userLink && userLink.platform_user_id) { 
-            const agentLinkRecord = await agentWebhookLinkService.findAgentLink(baseWebhook.id, clientUserId, userLink.platform_user_id);
-            if (agentLinkRecord && agentLinkRecord.agent_id) {
-                linkedAgentId = agentLinkRecord.agent_id;
+        // Ensure userLink and its platformUserId are valid before proceeding
+        if (userLink && userLink.platformUserId) { 
+            const agentLinkRecord = await agentWebhookLinkService.findAgentLink(baseWebhook.id, clientUserId, userLink.platformUserId);
+            if (agentLinkRecord && agentLinkRecord.agentId) {
+                linkedAgentId = agentLinkRecord.agentId;
                 isLinkedToAgent = true; // Set to true if agent is linked
             }
         }
@@ -278,7 +278,8 @@ export const searchWebhooks = async (clientUserId: string, queryVector: number[]
  */
 export const getWebhooksByProviderAndEvent = async (
     webhookProviderId: string,
-    subscribedEventId: string
+    subscribedEventId: string,
+    clientUserId: string
 ): Promise<Webhook[]> => {
     const sql = `
         SELECT * 
@@ -287,7 +288,7 @@ export const getWebhooksByProviderAndEvent = async (
     `;
     try {
         const result = await query<WebhookRecord>(sql, [webhookProviderId, subscribedEventId]);
-        return result.rows.map(mapWebhookRecordToWebhook);
+        return result.rows.map(record => mapWebhookRecordToWebhook(record, clientUserId));
     } catch (err) {
         console.error("Error finding webhook by provider and event ID:", err);
         throw new Error(`Database error finding webhook definition: ${err instanceof Error ? err.message : String(err)}`);
@@ -298,7 +299,7 @@ export const getWebhooksByProviderAndEvent = async (
  * Helper to convert DB record to application-level Webhook type.
  * Assumes JSON fields are parsed correctly by the DB driver or need parsing here.
  */
-export const mapWebhookRecordToWebhook = (record: WebhookRecord): Webhook => {
+export const mapWebhookRecordToWebhook = (record: WebhookRecord, clientUserId: string): Webhook => {
     // Attempt to parse JSON fields, handle potential errors or assume driver handles it
     let requiredSecrets: UtilitySecretType[];
     let clientUserIdentificationMapping: Record<UtilitySecretType, string>;
@@ -342,7 +343,7 @@ export const mapWebhookRecordToWebhook = (record: WebhookRecord): Webhook => {
         clientUserIdentificationMapping: clientUserIdentificationMapping,
         conversationIdIdentificationMapping: record.conversation_id_identification_mapping,
         eventPayloadSchema: eventPayloadSchema,
-        webhookUrl: undefined, // Set to undefined, assuming the type will be updated to optional
+        webhookUrl: constructWebhookTargetUrl(clientUserId, record.webhook_provider_id, record.subscribed_event_id),
         creatorClientUserId: record.creator_client_user_id,
     };
 };
@@ -366,7 +367,7 @@ export const getUserCreatedWebhooksService = async (clientUserId: string): Promi
         
         const enhancedWebhooks: Webhook[] = await Promise.all(
             result.rows.map(async (record: WebhookRecord) => {
-                const baseWebhook = mapWebhookRecordToWebhook(record); // webhookUrl is undefined here
+                const baseWebhook = mapWebhookRecordToWebhook(record, clientUserId); // webhookUrl is undefined here
 
                 // Construct webhookUrl here as clientUserId is available
                 let webhookUrl: string | undefined = undefined;
@@ -384,10 +385,10 @@ export const getUserCreatedWebhooksService = async (clientUserId: string): Promi
                 // Check if linked to an agent
                 let linkedAgentId: string | undefined = undefined;
                 let isLinkedToAgent = false;
-                if (userLink && userLink.platform_user_id) {
-                    const agentLinkRecord = await agentWebhookLinkService.findAgentLink(baseWebhook.id, clientUserId, userLink.platform_user_id);
-                    if (agentLinkRecord && agentLinkRecord.agent_id) {
-                        linkedAgentId = agentLinkRecord.agent_id;
+                if (userLink && userLink.platformUserId) {
+                    const agentLinkRecord = await agentWebhookLinkService.findAgentLink(baseWebhook.id, clientUserId, userLink.platformUserId);
+                    if (agentLinkRecord && agentLinkRecord.agentId) {
+                        linkedAgentId = agentLinkRecord.agentId;
                         isLinkedToAgent = true;
                     }
                 }

@@ -23,7 +23,7 @@ export const linkAgentToWebhook = async (
     clientUserId: string, 
     platformUserId: string,
     agentId: string
-): Promise<WebhookAgentLinkRecord> => {
+): Promise<WebhookAgentLink> => {
     // Include platform_user_id in the INSERT statement
     const sql = `
         INSERT INTO webhook_agent_links (webhook_id, client_user_id, platform_user_id, agent_id, created_at)
@@ -41,7 +41,7 @@ export const linkAgentToWebhook = async (
              if (!existing) throw new Error("Failed to create or find agent link after conflict.");
              return existing;
         }
-        return result.rows[0];
+        return mapWebhookAgentLinkRecordToWebhookAgentLink(result.rows[0]);
     } catch (err) {
         console.error("Error linking agent to webhook:", err);
         throw new Error(`Database error linking agent: ${err instanceof Error ? err.message : String(err)}`);
@@ -56,11 +56,11 @@ export const linkAgentToWebhook = async (
  * @param agentId The ID of the agent.
  * @returns The WebhookAgentLinkRecord or null if not found.
  */
-export const findWebhookAgentLink = async (webhookId: string, clientUserId: string, agentId: string): Promise<WebhookAgentLinkRecord | null> => {
+export const findWebhookAgentLink = async (webhookId: string, clientUserId: string, agentId: string): Promise<WebhookAgentLink | null> => {
     const sql = "SELECT * FROM webhook_agent_links WHERE webhook_id = $1 AND client_user_id = $2 AND agent_id = $3";
     try {
         const result = await query<WebhookAgentLinkRecord>(sql, [webhookId, clientUserId, agentId]);
-        return result.rows.length > 0 ? result.rows[0] : null;
+        return result.rows.length > 0 ? mapWebhookAgentLinkRecordToWebhookAgentLink(result.rows[0]) : null;
     } catch (err) {
         console.error("Error finding webhook agent link:", err);
         throw new Error(`Database error finding agent link: ${err instanceof Error ? err.message : String(err)}`);
@@ -79,7 +79,7 @@ export const findAgentLink = async (
     webhookId: string, 
     clientUserId: string, 
     platformUserId: string
-): Promise<WebhookAgentLinkRecord | null> => {
+): Promise<WebhookAgentLink | null> => {
     const sql = `
         SELECT * 
         FROM webhook_agent_links 
@@ -88,7 +88,7 @@ export const findAgentLink = async (
     `;
     try {
         const result = await query<WebhookAgentLinkRecord>(sql, [webhookId, clientUserId]);
-        return result.rows.length > 0 ? result.rows[0] : null;
+        return result.rows.length > 0 ? mapWebhookAgentLinkRecordToWebhookAgentLink(result.rows[0]) : null;
     } catch (err) {
         console.error("Error finding agent webhook link:", err);
         throw new Error(`Database error finding agent webhook link: ${err instanceof Error ? err.message : String(err)}`);

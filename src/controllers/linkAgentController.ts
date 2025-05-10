@@ -66,8 +66,7 @@ export const linkAgentController = async (req: Request, res: Response<ServiceRes
         }
 
         // Pass platformUserId to the service function
-        const agentLinkRecord = await linkAgentToWebhookService(webhookId, clientUserId, platformUserId, agentId);
-        const agentLink = mapWebhookAgentLinkRecordToWebhookAgentLink(agentLinkRecord);
+        const agentLink = await linkAgentToWebhookService(webhookId, clientUserId, platformUserId, agentId);
         const response: SuccessResponse<WebhookAgentLink> = { success: true, data: agentLink };
         console.log('DEBUG: Link Agent Response:', JSON.stringify(response));
         res.status(201).json(response);

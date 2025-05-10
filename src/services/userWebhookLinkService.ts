@@ -15,11 +15,11 @@ import { WebhookStatus, UserWebhook } from '@agent-base/types';
  * @param clientUserId The ID of the client user.
  * @returns The UserWebhookRecord or null if not found.
  */
-export const findUserWebhook = async (webhookId: string, clientUserId: string): Promise<UserWebhookRecord | null> => {
+export const findUserWebhook = async (webhookId: string, clientUserId: string): Promise<UserWebhook | null> => {
     const sql = "SELECT * FROM user_webhooks WHERE webhook_id = $1 AND client_user_id = $2";
     try {
         const result = await query<UserWebhookRecord>(sql, [webhookId, clientUserId]);
-        return result.rows.length > 0 ? result.rows[0] : null;
+        return result.rows.length > 0 ? mapUserWebhookRecordToUserWebhook(result.rows[0]) : null;
     } catch (err) {
         console.error("Error finding user webhook link:", err);
         throw new Error(`Database error finding user webhook: ${err instanceof Error ? err.message : String(err)}`);
@@ -42,7 +42,7 @@ export const createUserWebhook = async (
     platformUserId: string,
     status: WebhookStatus, 
     clientUserIdentificationHash: string | null
-): Promise<UserWebhookRecord> => {
+): Promise<UserWebhook> => {
     // The primary key constraint name defined in the migration is 'user_webhooks_pkey'
     const constraintName = 'user_webhooks_pkey'; 
     const sql = `
@@ -76,7 +76,7 @@ export const createUserWebhook = async (
         if (result.rows.length === 0) { 
              throw new Error("Failed to create or update user webhook link (conflict resolution failed?).");
         }
-        return result.rows[0];
+        return mapUserWebhookRecordToUserWebhook(result.rows[0]);
     } catch (err) {
         console.error("Error creating/updating user webhook link:", err);
         throw new Error(`Database error creating/updating user webhook: ${err instanceof Error ? err.message : String(err)}`);
@@ -98,7 +98,7 @@ export const updateUserWebhookStatus = async (
     clientUserId: string, 
     status: WebhookStatus, 
     clientUserIdentificationHash: string | null
-): Promise<UserWebhookRecord> => {
+): Promise<UserWebhook> => {
     const sql = `
         UPDATE user_webhooks
         SET 
@@ -118,7 +118,7 @@ export const updateUserWebhookStatus = async (
         if (result.rows.length === 0) {
             throw new Error("User webhook link not found for status update.");
         }
-        return result.rows[0];
+        return mapUserWebhookRecordToUserWebhook(result.rows[0]);
     } catch (err) {
         console.error("Error updating user webhook status/hash:", err);
         throw new Error(`Database error updating user webhook status/hash: ${err instanceof Error ? err.message : String(err)}`);
@@ -154,7 +154,7 @@ import { computeIdentifierHash } from '../lib/crypto.js'; // Ensure crypto is im
 export async function findUserWebhookByIdentifierHash(
     webhookId: string,
     clientUserIdentificationHash: string // Renamed param for clarity
-): Promise<UserWebhookRecord | null> {
+): Promise<UserWebhook | null> {
      const sql = `
         SELECT * 
         FROM user_webhooks 
@@ -162,39 +162,9 @@ export async function findUserWebhookByIdentifierHash(
      `;
      try {
          const result = await query<UserWebhookRecord>(sql, [webhookId, clientUserIdentificationHash]);
-         return result.rows.length > 0 ? result.rows[0] : null;
+         return result.rows.length > 0 ? mapUserWebhookRecordToUserWebhook(result.rows[0]) : null;
      } catch (err) {
          console.error("Error finding user webhook link by hash:", err);
          throw new Error(`Database error finding user webhook by hash: ${err instanceof Error ? err.message : String(err)}`);
      }
 } 
-
-/**
- * Retrieves all webhook definitions linked to a specific client user.
- *
- * @param clientUserId The ID of the client user.
- * @returns An array of WebhookRecords linked to the user.
- * @throws Error if database query fails.
- */
-// REMOVE THIS FUNCTION - Logic moved to webhookDefinitionService
-/*
-export const getUserPrivateWebhooksService = async (clientUserId: string): Promise<WebhookRecord[]> => {
-    // Select all columns from webhooks joined with user_webhooks
-    const sql = `
-        SELECT w.*
-        FROM webhooks w
-        INNER JOIN user_webhooks uw ON w.id = uw.webhook_id
-        WHERE uw.client_user_id = $1
-        ORDER BY w.created_at DESC;
-    `;
-    try {
-        // Specify WebhookRecord as the expected return type for the rows
-        const result = await query<WebhookRecord>(sql, [clientUserId]);
-        // The result.rows will be an array of WebhookRecord objects
-        return result.rows;
-    } catch (err) {
-        console.error("Error retrieving user's private webhooks:", err);
-        throw new Error(`Database error retrieving user webhooks: ${err instanceof Error ? err.message : String(err)}`);
-    }
-};
-*/ 

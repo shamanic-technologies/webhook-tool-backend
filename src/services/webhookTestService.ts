@@ -42,7 +42,7 @@ export const testWebhookExecution = async (
     clientUserId: string,
 ): Promise<ServiceResponse<WebhookTestResult>> => {
 
-    const webhook = await getWebhookById(webhookId);
+    const webhook = await getWebhookById(webhookId, clientUserId);
     console.debug(`Webhook: ${JSON.stringify(webhook, null, 2)}`);
 
     if (!webhook) {
@@ -131,6 +131,9 @@ export const testWebhookExecution = async (
     };
 
     try {
+        if (!requestDetails.targetUrl) {
+            throw new Error('Target URL is required');
+        }
         const response = await fetch(requestDetails.targetUrl, {
             method: requestDetails.method,
             headers: requestDetails.headers,

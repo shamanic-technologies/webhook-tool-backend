@@ -224,7 +224,7 @@ export const linkUserController = async (
     }
     const { webhookId, clientUserId, platformUserId } = validation;
 
-    const webhook = await getWebhookByIdService(webhookId);
+    const webhook = await getWebhookByIdService(webhookId, clientUserId);
     if (!webhook) {
       return res.status(404).json({
         success: false,
@@ -291,14 +291,13 @@ export const linkUserController = async (
         setupStatus.identifierValues!,
         appConfig.hmacKey,
       );
-      userWebhookRecord = await updateUserWebhookStatusService(
+      const userWebhook = await updateUserWebhookStatusService(
         webhookId,
         clientUserId,
         WebhookStatus.ACTIVE,
         identificationHash,
       );
 
-      const userWebhook = mapUserWebhookRecordToUserWebhook(userWebhookRecord);
       const response: SuccessResponse<UserWebhook> = {
         success: true,
         data: userWebhook,
