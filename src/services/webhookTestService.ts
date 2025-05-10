@@ -6,8 +6,7 @@
  */
 import { getWebhookById } from './webhookDefinitionService.js';
 import { getSecretGsm } from '../lib/gsm.js';
-import { WebhookRecord } from '../types/db.js';
-import { UserType, UtilitySecretType, UtilityProvider, Webhook, ErrorResponse, ServiceResponse } from '@agent-base/types';
+import { UserType, UtilitySecretType, UtilityProvider, ServiceResponse, WebhookTestResult } from '@agent-base/types';
 
 /**
  * Helper function to set a value at a nested path within an object.
@@ -29,20 +28,6 @@ const setObjectValueAtPath = (obj: any, path: string, value: any): void => {
     current[keys[keys.length - 1]] = value;
 };
 
-export interface WebhookTestResult {
-    request?: {
-        targetUrl: string;
-        method: string;
-        headers: Record<string, string>;
-        payload: any;
-    };
-    response?: {
-        status: number;
-        headers: Record<string, string>;
-        body: any;
-    };
-    resolvedSecrets?: Record<string, boolean>; // Indicates which secrets were found e.g. { "API_KEY": true, "TOKEN": false }
-}
 
 /**
  * Tests a webhook by retrieving its definition, fetching necessary secrets,
@@ -58,6 +43,7 @@ export const testWebhookExecution = async (
 ): Promise<ServiceResponse<WebhookTestResult>> => {
 
     const webhook = await getWebhookById(webhookId);
+    console.debug(`Webhook: ${JSON.stringify(webhook, null, 2)}`);
 
     if (!webhook) {
         return {
@@ -75,7 +61,7 @@ export const testWebhookExecution = async (
         };
     }
 
-    const payload : Record<string, unknown> = webhook.eventPayloadSchema;
+    const payload : Record<string, unknown> = {}; // Initialize as empty object
     const resolvedSecretsInfo: Record<string, boolean> = {};
     const requestHeaders: Record<string, string> = { 'Content-Type': 'application/json' };
 
@@ -92,7 +78,9 @@ export const testWebhookExecution = async (
                 );
 
                 if (secretResponse.success && secretResponse.data?.value) {
+                    console.debug(`Secret response: ${JSON.stringify(secretResponse, null, 2)}`);
                     setObjectValueAtPath(payload, secretPath, secretResponse.data.value);
+                    console.debug(`Payload after setting secret: ${JSON.stringify(payload, null, 2)}`);
                     // Check if path indicates a header, e.g., "headers.Authorization"
                     if (secretPath.toLowerCase().startsWith('headers.')) {
                         const headerKey = secretPath.substring('headers.'.length);
@@ -127,6 +115,14 @@ export const testWebhookExecution = async (
         }
     }
 
+    // Add conversationIdIdentificationMapping to the payload if it exists
+    if (webhook.conversationIdIdentificationMapping) {
+        // Using a placeholder value for the test payload.
+        // This value should ideally be recognizable as a test value.
+        setObjectValueAtPath(payload, webhook.conversationIdIdentificationMapping, "test_conversation_id_123");
+        console.debug(`Payload after setting conversationIdIdentificationMapping: ${JSON.stringify(payload, null, 2)}`);
+    }
+
     const requestDetails = {
         targetUrl: webhook.webhookUrl,
         method: 'POST', // Defaulting to POST, can be made configurable
@@ -148,6 +144,7 @@ export const testWebhookExecution = async (
         } catch (e) {
             parsedBody = responseBody; // Keep as text if not valid JSON
         }
+        console.debug(`Response body: ${JSON.stringify(parsedBody, null, 2)}`);
         
         const responseHeaders: Record<string, string> = {};
         response.headers.forEach((value, key) => {

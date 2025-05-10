@@ -6,8 +6,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { testWebhookExecution } from '../services/webhookTestService.js';
 import { AuthenticatedRequest } from '../middleware/auth.js';
-import { ServiceResponse, ErrorResponse } from '@agent-base/types';
-import { WebhookTestResult } from '../services/webhookTestService.js';
+import { ServiceResponse, ErrorResponse, WebhookTestResult } from '@agent-base/types';
 
 /**
  * Controller function to handle testing a webhook.
