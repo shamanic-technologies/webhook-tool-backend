@@ -220,12 +220,17 @@ export const searchWebhooks = async (clientUserId: string, queryVector: number[]
     
     const enhancedWebhooks: Webhook[] = await Promise.all(
       result.rows.map(async (record: WebhookRecord & { similarity?: number }) => { // Explicitly type 'record'
-        const baseWebhook = mapWebhookRecordToWebhook(record);
+        const baseWebhook = mapWebhookRecordToWebhook(record); // webhookUrl is now undefined here
 
-        // 1. Construct webhookUrl using the helper
-        const webhookUrl = constructWebhookTargetUrl(baseWebhook.webhookProviderId, baseWebhook.subscribedEventId);
+        // Construct webhookUrl here as clientUserId is available
+        let webhookUrl: string | undefined = undefined;
+        if (baseWebhook.webhookProviderId && baseWebhook.subscribedEventId) {
+          webhookUrl = constructWebhookTargetUrl(clientUserId, baseWebhook.webhookProviderId, baseWebhook.subscribedEventId);
+        } else {
+          console.warn(`Could not construct webhookUrl for webhook ID ${baseWebhook.id} in searchWebhooks due to missing provider or event ID.`);
+        }
 
-        // 2. Get UserWebhook link details
+        // UserWebhook link details
         const userLink = await userWebhookLinkService.findUserWebhook(baseWebhook.id, clientUserId);
         const isLinkedToCurrentUser = !!userLink; // Boolean: true if userLink exists
         const currentUserWebhookStatus = userLink ? userLink.status : undefined; // Actual status or undefined
@@ -243,8 +248,8 @@ export const searchWebhooks = async (clientUserId: string, queryVector: number[]
         }
 
         return {
-          ...baseWebhook,
-          webhookUrl,
+          ...baseWebhook, 
+          webhookUrl, // Add the computed webhookUrl
           isLinkedToCurrentUser,    // Populate based on userLink existence
           currentUserWebhookStatus, // Populate with actual status from userLink
           isLinkedToAgent,          // Populate with explicit boolean
@@ -327,15 +332,6 @@ export const mapWebhookRecordToWebhook = (record: WebhookRecord): Webhook => {
         eventPayloadSchema = {}; // Default to empty object on error
     }
 
-    // Construct webhookUrl, ensuring provider_id and event_id are present
-    let webhookUrl: string;
-    if (record.webhook_provider_id && record.subscribed_event_id) {
-        webhookUrl = constructWebhookTargetUrl(record.webhook_provider_id, record.subscribed_event_id);
-    } else {
-        webhookUrl = 'invalid_url_missing_data'; // Or a more robust error/default handling
-        console.warn(`Could not construct webhookUrl for webhook ID ${record.id} due to missing provider or event ID. WEBHOOK_URL env: ${process.env.WEBHOOK_URL}`);
-    }
-
     return {
         id: record.id,
         name: record.name,
@@ -346,7 +342,7 @@ export const mapWebhookRecordToWebhook = (record: WebhookRecord): Webhook => {
         clientUserIdentificationMapping: clientUserIdentificationMapping,
         conversationIdIdentificationMapping: record.conversation_id_identification_mapping,
         eventPayloadSchema: eventPayloadSchema,
-        webhookUrl: webhookUrl, // Added to satisfy Webhook type
+        webhookUrl: undefined, // Set to undefined, assuming the type will be updated to optional
         creatorClientUserId: record.creator_client_user_id,
     };
 };
@@ -370,7 +366,15 @@ export const getUserCreatedWebhooksService = async (clientUserId: string): Promi
         
         const enhancedWebhooks: Webhook[] = await Promise.all(
             result.rows.map(async (record: WebhookRecord) => {
-                const baseWebhook = mapWebhookRecordToWebhook(record); // This already sets webhookUrl
+                const baseWebhook = mapWebhookRecordToWebhook(record); // webhookUrl is undefined here
+
+                // Construct webhookUrl here as clientUserId is available
+                let webhookUrl: string | undefined = undefined;
+                if (baseWebhook.webhookProviderId && baseWebhook.subscribedEventId) {
+                    webhookUrl = constructWebhookTargetUrl(clientUserId, baseWebhook.webhookProviderId, baseWebhook.subscribedEventId);
+                } else {
+                    console.warn(`Could not construct webhookUrl for webhook ID ${baseWebhook.id} in getUserCreatedWebhooksService due to missing provider or event ID.`);
+                }
 
                 // Get UserWebhook link details
                 const userLink = await userWebhookLinkService.findUserWebhook(baseWebhook.id, clientUserId);
@@ -390,7 +394,7 @@ export const getUserCreatedWebhooksService = async (clientUserId: string): Promi
 
                 return {
                     ...baseWebhook,
-                    // webhookUrl is already set by mapWebhookRecordToWebhook
+                    webhookUrl, // Add the computed webhookUrl
                     isLinkedToCurrentUser,
                     currentUserWebhookStatus,
                     isLinkedToAgent,
