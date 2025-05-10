@@ -276,11 +276,10 @@ export const searchWebhooks = async (clientUserId: string, queryVector: number[]
  * @param subscribedEventId The unique event ID associated with the webhook URL.
  * @returns The WebhookRecord or null if not found.
  */
-export const getWebhooksByProviderAndEvent = async (
+export const getWebhookRecordsByProviderAndEvent = async (
     webhookProviderId: string,
     subscribedEventId: string,
-    clientUserId: string
-): Promise<Webhook[]> => {
+): Promise<WebhookRecord[]> => {
     const sql = `
         SELECT * 
         FROM webhooks 
@@ -288,7 +287,7 @@ export const getWebhooksByProviderAndEvent = async (
     `;
     try {
         const result = await query<WebhookRecord>(sql, [webhookProviderId, subscribedEventId]);
-        return result.rows.map(record => mapWebhookRecordToWebhook(record, clientUserId));
+        return result.rows;
     } catch (err) {
         console.error("Error finding webhook by provider and event ID:", err);
         throw new Error(`Database error finding webhook definition: ${err instanceof Error ? err.message : String(err)}`);
@@ -395,7 +394,7 @@ export const getUserCreatedWebhooksService = async (clientUserId: string): Promi
 
                 return {
                     ...baseWebhook,
-                    webhookUrl, // Add the computed webhookUrl
+                    webhookUrl,
                     isLinkedToCurrentUser,
                     currentUserWebhookStatus,
                     isLinkedToAgent,
@@ -408,4 +407,4 @@ export const getUserCreatedWebhooksService = async (clientUserId: string): Promi
         console.error("Error retrieving user's created webhooks:", err);
         throw new Error(`Database error retrieving created webhooks: ${err instanceof Error ? err.message : String(err)}`);
     }
-}; 
+};
