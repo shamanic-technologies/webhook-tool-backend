@@ -31,6 +31,7 @@ import { WebhookIdParamsSchema } from "../lib/schemas.js";
 import { formatValidationError } from "../lib/validationUtils.js";
 import { AuthenticatedRequest } from "../middleware/auth.js";
 import { appConfig } from "../index.js";
+import { constructWebhookTargetUrl } from "../lib/urlUtils.js";
 
 // Type guard to check if a UtilitySecretType is specifically a UtilityInputSecret
 function isUtilityInputSecret(
@@ -98,7 +99,7 @@ async function _checkWebhookSetupStatus(
   const missingInputs: UtilityInputSecret[] = [];
   const missingConfirmations: UtilityActionConfirmation[] = [];
   const identifierValues: Record<string, any> = {};
-  const webhookUrlToInput = `${process.env.WEBHOOK_URL}/${webhook.webhookProviderId}/${webhook.subscribedEventId}`;
+  const webhookUrlToInput = constructWebhookTargetUrl(webhook.webhookProviderId, webhook.subscribedEventId);
   const confirmationSecretDbType =
     UtilityActionConfirmation.WEBHOOK_URL_INPUTED;
 

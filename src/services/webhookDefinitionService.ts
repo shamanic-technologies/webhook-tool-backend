@@ -9,6 +9,7 @@ import { WebhookRecord } from '../types/db.js';
 import { WebhookData, Webhook, WebhookProviderId, UtilitySecretType } from '@agent-base/types';
 import pgvector from 'pgvector/pg'; // Import for vector type usage
 import { v4 as uuidv4 } from 'uuid'; // For generating webhook IDs
+import { constructWebhookTargetUrl } from '../lib/urlUtils.js'; // Import the helper
 
 // --- Import UserWebhookLinkService and AgentWebhookLinkService ---
 import * as userWebhookLinkService from './userWebhookLinkService.js';
@@ -221,8 +222,8 @@ export const searchWebhooks = async (clientUserId: string, queryVector: number[]
       result.rows.map(async (record: WebhookRecord & { similarity?: number }) => { // Explicitly type 'record'
         const baseWebhook = mapWebhookRecordToWebhook(record);
 
-        // 1. Construct webhookUrl
-        const webhookUrl = `${process.env.WEBHOOK_URL}/${baseWebhook.webhookProviderId}/${baseWebhook.subscribedEventId}`;
+        // 1. Construct webhookUrl using the helper
+        const webhookUrl = constructWebhookTargetUrl(baseWebhook.webhookProviderId, baseWebhook.subscribedEventId);
 
         // 2. Get UserWebhook link details
         const userLink = await userWebhookLinkService.findUserWebhook(baseWebhook.id, clientUserId);
@@ -327,11 +328,11 @@ export const mapWebhookRecordToWebhook = (record: WebhookRecord): Webhook => {
     }
 
     // Construct webhookUrl, ensuring provider_id and event_id are present
-    const webhookUrl = (record.webhook_provider_id && record.subscribed_event_id)
-                       ? `${process.env.WEBHOOK_URL}/${record.webhook_provider_id}/${record.subscribed_event_id}`
-                       : 'invalid_url_missing_data'; // Or a more robust error/default handling
-
-    if (webhookUrl === 'invalid_url_missing_data') {
+    let webhookUrl: string;
+    if (record.webhook_provider_id && record.subscribed_event_id) {
+        webhookUrl = constructWebhookTargetUrl(record.webhook_provider_id, record.subscribed_event_id);
+    } else {
+        webhookUrl = 'invalid_url_missing_data'; // Or a more robust error/default handling
         console.warn(`Could not construct webhookUrl for webhook ID ${record.id} due to missing provider or event ID. WEBHOOK_URL env: ${process.env.WEBHOOK_URL}`);
     }
 
