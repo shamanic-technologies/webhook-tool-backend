@@ -5,8 +5,9 @@
  * linking users to webhooks (user_webhooks table).
  */
 import { query } from '../lib/db.js';
-import { UserWebhookRecord, WebhookRecord } from '../types/db.js';
+import { UserWebhookRecord } from '../types/db.js';
 import { WebhookStatus, UserWebhook } from '@agent-base/types';
+import { randomUUID } from 'crypto'; // Added for generating webhook_secret
 
 /**
  * Finds an existing user-webhook link.
@@ -27,23 +28,21 @@ export const findUserWebhook = async (webhookId: string, clientUserId: string): 
 };
 
 /**
- * Creates a new link between a user and a webhook or updates existing.
+ * Creates a new link between a user and a webhook or updates existing if a conflict occurs on primary key.
  *
  * @param webhookId The ID of the webhook.
  * @param clientUserId The ID of the client user.
  * @param platformUserId The ID of the platform user.
  * @param status The initial status of the link (e.g., PENDING).
- * @param clientUserIdentificationHash The hash of identifying fields (null if status is not ACTIVE).
- * @returns The newly created or updated UserWebhookRecord.
+ * @returns The newly created or updated UserWebhook.
  */
 export const createUserWebhook = async (
     webhookId: string, 
     clientUserId: string, 
     platformUserId: string,
-    status: WebhookStatus, 
-    clientUserIdentificationHash: string | null
+    status: WebhookStatus,
 ): Promise<UserWebhook> => {
-    // The primary key constraint name defined in the migration is 'user_webhooks_pkey'
+    const newWebhookSecret = randomUUID();
     const constraintName = 'user_webhooks_pkey'; 
     const sql = `
         INSERT INTO user_webhooks (
@@ -51,17 +50,16 @@ export const createUserWebhook = async (
             client_user_id, 
             platform_user_id,
             status, 
-            client_user_identification_hash,
+            webhook_secret, -- Added webhook_secret
             created_at, 
             updated_at
         )
         VALUES ($1, $2, $3, $4, $5, NOW(), NOW())
-        -- Specify the constraint name for ON CONFLICT
         ON CONFLICT ON CONSTRAINT ${constraintName} 
         DO UPDATE SET 
             platform_user_id = EXCLUDED.platform_user_id, 
             status = EXCLUDED.status, 
-            client_user_identification_hash = EXCLUDED.client_user_identification_hash,
+            webhook_secret = EXCLUDED.webhook_secret, -- Ensure webhook_secret is updated on conflict if necessary
             updated_at = NOW()
         RETURNING *;
     `;
@@ -71,7 +69,7 @@ export const createUserWebhook = async (
             clientUserId, 
             platformUserId,
             status, 
-            clientUserIdentificationHash
+            newWebhookSecret // Pass the generated secret
         ]);
         if (result.rows.length === 0) { 
              throw new Error("Failed to create or update user webhook link (conflict resolution failed?).");
@@ -84,26 +82,26 @@ export const createUserWebhook = async (
 };
 
 /**
- * Updates the status and identification hash of an existing user-webhook link.
+ * Updates the status of an existing user-webhook link.
+ * The webhook_secret is NOT updated by this function; it is set at creation.
  *
  * @param webhookId The ID of the webhook.
  * @param clientUserId The ID of the client user.
  * @param status The new status.
- * @param clientUserIdentificationHash The new hash value (can be null).
- * @returns The updated UserWebhookRecord.
+ * @returns The updated UserWebhook (including the existing webhook_secret).
  * @throws Error if the record doesn't exist or update fails.
  */
 export const updateUserWebhookStatus = async (
     webhookId: string, 
     clientUserId: string, 
-    status: WebhookStatus, 
-    clientUserIdentificationHash: string | null
+    status: WebhookStatus 
 ): Promise<UserWebhook> => {
     const sql = `
         UPDATE user_webhooks
         SET 
-            status = $3, 
-            client_user_identification_hash = $4,
+            status = $3,
+            -- webhook_secret is NOT modified here
+            -- client_user_identification_hash is NOT modified here and is deprecated
             updated_at = NOW()
         WHERE webhook_id = $1 AND client_user_id = $2
         RETURNING *;
@@ -112,59 +110,65 @@ export const updateUserWebhookStatus = async (
         const result = await query<UserWebhookRecord>(sql, [
             webhookId, 
             clientUserId, 
-            status, 
-            clientUserIdentificationHash
+            status 
         ]);
         if (result.rows.length === 0) {
             throw new Error("User webhook link not found for status update.");
         }
         return mapUserWebhookRecordToUserWebhook(result.rows[0]);
     } catch (err) {
-        console.error("Error updating user webhook status/hash:", err);
-        throw new Error(`Database error updating user webhook status/hash: ${err instanceof Error ? err.message : String(err)}`);
+        console.error("Error updating user webhook status:", err);
+        throw new Error(`Database error updating user webhook status: ${err instanceof Error ? err.message : String(err)}`);
     }
+};
+
+// Get UserWebhook by webhookId and clientUserId
+export const getUserWebhookByWebhookIdAndClientUserId = async (webhookId: string, clientUserId: string): Promise<UserWebhook> => {
+    const sql = "SELECT * FROM user_webhooks WHERE webhook_id = $1 AND client_user_id = $2";
+    const result = await query<UserWebhookRecord>(sql, [webhookId, clientUserId]);
+    if (result.rows.length === 0) {
+        throw new Error(`User webhook link not found for webhookId ${webhookId} and clientUserId ${clientUserId}`);
+    }
+    return mapUserWebhookRecordToUserWebhook(result.rows[0]);
 };
 
 /**
  * Helper to convert DB record to application-level UserWebhook type.
  */
 export const mapUserWebhookRecordToUserWebhook = (record: UserWebhookRecord): UserWebhook => {
-    if (record.client_user_identification_hash === null) {
-        throw new Error(`Database integrity error: client_user_identification_hash is null for record webhookId=${record.webhook_id}, clientUserId=${record.client_user_id}. This should not happen for ACTIVE webhooks returned to the application.`);
-    }
     return {
         webhookId: record.webhook_id,
         clientUserId: record.client_user_id,
         platformUserId: record.platform_user_id,
         status: record.status,
-        clientUserIdentificationHash: record.client_user_identification_hash,
+        webhookSecret: record.webhook_secret,
         createdAt: record.created_at,
     };
 };
 
-// Function to find user webhook by hash (needed for resolver)
-import { computeIdentifierHash } from '../lib/crypto.js'; // Ensure crypto is imported if not already
+// // Function to find user webhook by hash (needed for resolver)
+// import { computeIdentifierHash } from '../lib/crypto.js'; // Ensure crypto is imported if not already
 
-/**
- * Finds a UserWebhook record by webhookId and the hash of its identifiers.
- * @param webhookId The ID of the webhook definition.
- * @param providerIdentifierHash The computed HMAC hash of the identifiers.
- * @returns The found UserWebhookRecord or null.
- */
-export async function findUserWebhookByIdentifierHash(
-    webhookId: string,
-    clientUserIdentificationHash: string // Renamed param for clarity
-): Promise<UserWebhook | null> {
-     const sql = `
-        SELECT * 
-        FROM user_webhooks 
-        WHERE webhook_id = $1 AND client_user_identification_hash = $2
-     `;
-     try {
-         const result = await query<UserWebhookRecord>(sql, [webhookId, clientUserIdentificationHash]);
-         return result.rows.length > 0 ? mapUserWebhookRecordToUserWebhook(result.rows[0]) : null;
-     } catch (err) {
-         console.error("Error finding user webhook link by hash:", err);
-         throw new Error(`Database error finding user webhook by hash: ${err instanceof Error ? err.message : String(err)}`);
-     }
-} 
+// /**
+//  * Finds a UserWebhook record by webhookId and the hash of its identifiers.
+//  * @param webhookId The ID of the webhook definition.
+//  * @param providerIdentifierHash The computed HMAC hash of the identifiers.
+//  * @returns The found UserWebhookRecord or null.
+//  */
+// export async function findUserWebhookByIdentifierHash(
+//     webhookId: string,
+//     clientUserIdentificationHash: string // Renamed param for clarity
+// ): Promise<UserWebhook | null> {
+//      const sql = `
+//         SELECT * 
+//         FROM user_webhooks 
+//         WHERE webhook_id = $1 AND client_user_identification_hash = $2
+//      `;
+//      try {
+//          const result = await query<UserWebhookRecord>(sql, [webhookId, clientUserIdentificationHash]);
+//          return result.rows.length > 0 ? mapUserWebhookRecordToUserWebhook(result.rows[0]) : null;
+//      } catch (err) {
+//          console.error("Error finding user webhook link by hash:", err);
+//          throw new Error(`Database error finding user webhook by hash: ${err instanceof Error ? err.message : String(err)}`);
+//      }
+// } 

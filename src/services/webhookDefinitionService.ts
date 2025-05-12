@@ -14,6 +14,7 @@ import { constructWebhookTargetUrl } from '../lib/urlUtils.js'; // Import the he
 // --- Import UserWebhookLinkService and AgentWebhookLinkService ---
 import * as userWebhookLinkService from './userWebhookLinkService.js';
 import * as agentWebhookLinkService from './agentWebhookLinkService.js';
+import { getUserWebhookByWebhookIdAndClientUserId } from './userWebhookLinkService.js';
 
 // --- Helper Function for Schema Path Validation --- 
 
@@ -171,6 +172,7 @@ export const getWebhookById = async (id: string, clientUserId: string): Promise<
     if (result.rows.length === 0) {
       return null;
     }
+
     // TODO: Consider parsing JSON fields here if needed immediately, though mapping does it
     return mapWebhookRecordToWebhook(result.rows[0], clientUserId);
   } catch (err) {
@@ -220,12 +222,11 @@ export const searchWebhooks = async (clientUserId: string, queryVector: number[]
     
     const enhancedWebhooks: Webhook[] = await Promise.all(
       result.rows.map(async (record: WebhookRecord & { similarity?: number }) => { // Explicitly type 'record'
-        const baseWebhook = mapWebhookRecordToWebhook(record, clientUserId); // webhookUrl is now undefined here
-
+        const baseWebhook = await mapWebhookRecordToWebhook(record, clientUserId); // webhookUrl is now undefined here
         // Construct webhookUrl here as clientUserId is available
         let webhookUrl: string | undefined = undefined;
         if (baseWebhook.webhookProviderId && baseWebhook.subscribedEventId) {
-          webhookUrl = constructWebhookTargetUrl(clientUserId, baseWebhook.webhookProviderId, baseWebhook.subscribedEventId);
+          webhookUrl = await constructWebhookTargetUrl(baseWebhook, clientUserId);
         } else {
           console.warn(`Could not construct webhookUrl for webhook ID ${baseWebhook.id} in searchWebhooks due to missing provider or event ID.`);
         }
@@ -298,54 +299,33 @@ export const getWebhookRecordsByProviderAndEvent = async (
  * Helper to convert DB record to application-level Webhook type.
  * Assumes JSON fields are parsed correctly by the DB driver or need parsing here.
  */
-export const mapWebhookRecordToWebhook = (record: WebhookRecord, clientUserId: string): Webhook => {
-    // Attempt to parse JSON fields, handle potential errors or assume driver handles it
-    let requiredSecrets: UtilitySecretType[];
-    let clientUserIdentificationMapping: Record<UtilitySecretType, string>;
-    let eventPayloadSchema: Record<string, unknown>;
-
-    try {
-        requiredSecrets = typeof record.required_secrets === 'string' 
-            ? JSON.parse(record.required_secrets) 
-            : record.required_secrets; // Assuming driver parses JSONB to object/array
-    } catch (e) {
-        console.error(`Error parsing required_secrets for webhook ${record.id}:`, e);
-        requiredSecrets = []; // Default to empty array on error
-    }
-
-    try {
-        // Use correct snake_case DB column name
-        clientUserIdentificationMapping = typeof record.client_user_identification_mapping === 'string' 
-            ? JSON.parse(record.client_user_identification_mapping) 
-            : record.client_user_identification_mapping;
-    } catch (e) {
-        console.error(`Error parsing client_user_identification_mapping for webhook ${record.id}:`, e);
-        clientUserIdentificationMapping = {}; // Default to empty object on error
-    }
-
-    try {
-        eventPayloadSchema = typeof record.event_payload_schema === 'string' 
-            ? JSON.parse(record.event_payload_schema) 
-            : record.event_payload_schema;
-    } catch (e) {
-        console.error(`Error parsing event_payload_schema for webhook ${record.id}:`, e);
-        eventPayloadSchema = {}; // Default to empty object on error
-    }
-
-    return {
-        id: record.id,
-        name: record.name,
-        description: record.description,
-        webhookProviderId: record.webhook_provider_id,
-        subscribedEventId: record.subscribed_event_id,
-        requiredSecrets: requiredSecrets,
-        clientUserIdentificationMapping: clientUserIdentificationMapping,
-        conversationIdIdentificationMapping: record.conversation_id_identification_mapping,
-        eventPayloadSchema: eventPayloadSchema,
-        webhookUrl: constructWebhookTargetUrl(clientUserId, record.webhook_provider_id, record.subscribed_event_id),
-        creatorClientUserId: record.creator_client_user_id,
-    };
+export const mapWebhookRecordToWebhook = async (record: WebhookRecord, clientUserId: string): Promise<Webhook> => {
+    const webhook = await _mapWebhookRecordToWebhook(record);
+    webhook.webhookUrl = await constructWebhookTargetUrl(webhook, clientUserId);
+    return webhook;
 };
+
+/**
+ * Helper to convert DB record to application-level Webhook type.
+ * Assumes JSON fields are parsed correctly by the DB driver or need parsing here.
+ */
+const _mapWebhookRecordToWebhook = async (record: WebhookRecord): Promise<Webhook> => {
+
+  return {
+      id: record.id,
+      name: record.name,
+      description: record.description,
+      webhookProviderId: record.webhook_provider_id,
+      subscribedEventId: record.subscribed_event_id,
+      requiredSecrets: [],
+      clientUserIdentificationMapping: {},
+      conversationIdIdentificationMapping: record.conversation_id_identification_mapping,
+      eventPayloadSchema: {},
+      creatorClientUserId: record.creator_client_user_id,
+  };
+};
+
+
 
 /**
  * Retrieves all webhook definitions created by a specific client user, enhanced with linkage information.
@@ -366,12 +346,11 @@ export const getUserCreatedWebhooksService = async (clientUserId: string): Promi
         
         const enhancedWebhooks: Webhook[] = await Promise.all(
             result.rows.map(async (record: WebhookRecord) => {
-                const baseWebhook = mapWebhookRecordToWebhook(record, clientUserId); // webhookUrl is undefined here
-
+                const baseWebhook = await mapWebhookRecordToWebhook(record, clientUserId); // webhookUrl is undefined here
                 // Construct webhookUrl here as clientUserId is available
                 let webhookUrl: string | undefined = undefined;
                 if (baseWebhook.webhookProviderId && baseWebhook.subscribedEventId) {
-                    webhookUrl = constructWebhookTargetUrl(clientUserId, baseWebhook.webhookProviderId, baseWebhook.subscribedEventId);
+                    webhookUrl = await constructWebhookTargetUrl(baseWebhook, clientUserId);
                 } else {
                     console.warn(`Could not construct webhookUrl for webhook ID ${baseWebhook.id} in getUserCreatedWebhooksService due to missing provider or event ID.`);
                 }

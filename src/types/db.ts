@@ -39,7 +39,8 @@ export interface UserWebhookRecord {
     client_user_id: string; // Identifier for the user in the client's system
     platform_user_id: string; // Added platform user ID
     status: WebhookStatus; // e.g., 'pending', 'active'
-    client_user_identification_hash: string | null; // Added hash field (snake_case, nullable)
+    webhook_secret: string; // Unique secret for this webhook link
+    client_user_identification_hash: string | null; // DEPRECATED - will be removed
     created_at: Date;
     updated_at: Date;
 }
