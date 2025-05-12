@@ -10,7 +10,6 @@ import {
 } from '@agent-base/types';
 import { 
     linkAgentToWebhook as linkAgentToWebhookService,
-    mapWebhookAgentLinkRecordToWebhookAgentLink,
 } from '../services/agentWebhookLinkService.js';
 import { findUserWebhook as findUserWebhookService } from '../services/userWebhookLinkService.js';
 import { WebhookIdParamsSchema, LinkAgentSchema } from '../lib/schemas.js';
