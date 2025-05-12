@@ -45,6 +45,21 @@ export interface UserWebhookRecord {
     updated_at: Date;
 }
 
+export interface WebhookEventRecord {
+    id: string; // Unique identifier for the event record
+    webhook_id: string;
+    client_user_id: string;
+    platform_user_id: string;
+    payload: Record<string, unknown>;
+    provider_id: string;
+    subscribed_event_id: string;
+    webhook_secret: string;
+    conversation_id?: string;
+    agent_id?: string;
+    created_at: Date;
+    updated_at: Date;
+}
+
 /**
  * Represents the structure of a record in the 'webhook_agent_links' table.
  * Links an active user webhook configuration to a specific agent.

@@ -11,6 +11,7 @@ import { linkUserController } from '../controllers/linkUserController.js';
 import { linkAgentController } from '../controllers/linkAgentController.js';
 import { incomingWebhookController } from '../controllers/incomingWebhookController.js';
 import { getUserCreatedWebhooksController } from '../controllers/getUserCreatedWebhooksController.js';
+import { getWebhookEventsController } from '../controllers/getWebhookEventsController.js';
 import { authMiddleware } from '../middleware/auth.js';
 
 const router: Router = Router();
@@ -28,10 +29,8 @@ authenticatedRouter.post('/search', searchWebhooksController);
 authenticatedRouter.post('/:webhookId/link-user', linkUserController);
 authenticatedRouter.post('/:webhookId/link-agent', linkAgentController);
 authenticatedRouter.get('/get-user-created-webhooks', getUserCreatedWebhooksController);
+authenticatedRouter.get('/:webhookId/events', getWebhookEventsController);
 
 router.use('/', authenticatedRouter); // Mount authenticated routes AFTER public routes
-
-// Route for internal gateway service to resolve incoming webhooks
-// router.post('/resolve', resolveWebhookController); // REMOVE from here
 
 export default router; 
