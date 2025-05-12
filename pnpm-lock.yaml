@@ -9,14 +9,17 @@ importers:
   .:
     dependencies:
       '@agent-base/api-client':
-        specifier: ^0.20.0
-        version: 0.20.0(@agent-base/types@0.23.0(react@19.1.0)(zod@3.24.4))(react@19.1.0)(zod@3.24.4)
+        specifier: ^0.22.0
+        version: 0.22.0(@agent-base/types@0.24.0(react@19.1.0)(zod@3.24.4))(react@19.1.0)(zod@3.24.4)
       '@agent-base/types':
-        specifier: ^0.23.0
-        version: 0.23.0(react@19.1.0)(zod@3.24.4)
+        specifier: ^0.24.0
+        version: 0.24.0(react@19.1.0)(zod@3.24.4)
       '@google-cloud/secret-manager':
         specifier: ^5.6.0
         version: 5.6.0
+      ai:
+        specifier: ^4.3.15
+        version: 4.3.15(react@19.1.0)(zod@3.24.4)
       dotenv:
         specifier: ^16.5.0
         version: 16.5.0
@@ -87,13 +90,13 @@ importers:
 
 packages:
 
-  '@agent-base/api-client@0.20.0':
-    resolution: {integrity: sha512-qVugAxVevPwAXZe0vLgGSZv4/RismixdklGkgULwjWRtEkIiy+7tQYZp2nEkI9F0Tl9feaO8BuqV+SuX2NlmMA==}
+  '@agent-base/api-client@0.22.0':
+    resolution: {integrity: sha512-6bqJeokhk8XZMr83UpqcfW9soAYXkAeLZm2qxhLNR3qMgTDgaFOrZEcYDj+tr8a/sEHZGtT9Nt+AijmY9ygu7w==}
     peerDependencies:
-      '@agent-base/types': 0.14.0
+      '@agent-base/types': 0.24.0
 
-  '@agent-base/types@0.23.0':
-    resolution: {integrity: sha512-E+k9q7Us2BUtUqeGfaErbqMP9S4ZyvqaXCcYJobcSkbFw0anK38Ey8qVpOoD7CH/wQxfkmTUpZaAPnH1vErg6A==}
+  '@agent-base/types@0.24.0':
+    resolution: {integrity: sha512-GnUI/eXse2ZqxIfWIBUqhFerZCGVPH1YkLNXc+lsvOeYbfP6UeGRb8N+R4f3yjBr8HIwHjkV2f4ZPa6i/waoWw==}
 
   '@ai-sdk/provider-utils@2.2.8':
     resolution: {integrity: sha512-fqhG+4sCVv8x7nFzYnFo19ryhAa3w096Kmc3hWxMQfW/TubPOmt3A6tYZhl4mUfQWWQMsuSkLrtjlWuXBVSGQA==}
@@ -2637,9 +2640,9 @@ packages:
 
 snapshots:
 
-  '@agent-base/api-client@0.20.0(@agent-base/types@0.23.0(react@19.1.0)(zod@3.24.4))(react@19.1.0)(zod@3.24.4)':
+  '@agent-base/api-client@0.22.0(@agent-base/types@0.24.0(react@19.1.0)(zod@3.24.4))(react@19.1.0)(zod@3.24.4)':
     dependencies:
-      '@agent-base/types': 0.23.0(react@19.1.0)(zod@3.24.4)
+      '@agent-base/types': 0.24.0(react@19.1.0)(zod@3.24.4)
       ai: 4.3.15(react@19.1.0)(zod@3.24.4)
       axios: 1.9.0
     transitivePeerDependencies:
@@ -2647,7 +2650,7 @@ snapshots:
       - react
       - zod
 
-  '@agent-base/types@0.23.0(react@19.1.0)(zod@3.24.4)':
+  '@agent-base/types@0.24.0(react@19.1.0)(zod@3.24.4)':
     dependencies:
       '@types/json-schema': 7.0.15
       ai: 4.3.15(react@19.1.0)(zod@3.24.4)

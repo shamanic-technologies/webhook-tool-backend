@@ -28,9 +28,10 @@
   "author": "Agent Base",
   "license": "MIT",
   "dependencies": {
-    "@agent-base/api-client": "^0.20.0",
-    "@agent-base/types": "^0.23.0",
+    "@agent-base/api-client": "^0.22.0",
+    "@agent-base/types": "^0.24.0",
     "@google-cloud/secret-manager": "^5.6.0",
+    "ai": "^4.3.15",
     "dotenv": "^16.5.0",
     "express": "^4.21.2",
     "pg": "^8.15.5",

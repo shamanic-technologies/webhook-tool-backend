@@ -128,7 +128,6 @@ export const incomingWebhookController = async (req: Request<IncomingWebhookPara
         }
         
 
-
         console.log("Webhook resolved successfully");
         res.status(200).json({
             success: true,
