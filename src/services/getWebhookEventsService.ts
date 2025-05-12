@@ -1,7 +1,12 @@
 /**
  * Service for retrieving webhook events associated with a specific webhook and client user.
  */
-import { ServiceResponse, ErrorResponse, WebhookEvent } from '@agent-base/types';
+import { 
+    ServiceResponse,
+    ErrorResponse,
+    WebhookEvent,
+    UtilityProvider
+} from '@agent-base/types';
 import { query } from '../lib/db.js'; // Import the database query helper
 import { WebhookEventRecord } from '../types/db.js'; // Import the DB record type
 
@@ -79,15 +84,13 @@ const mapWebhookEventRecordToWebhookEvent = (record: WebhookEventRecord): Webhoo
         webhookId: record.webhook_id,
         clientUserId: record.client_user_id,
         platformUserId: record.platform_user_id,
-        receivedAt: record.created_at, // Assuming created_at represents received time
-        // processedAt: record.updated_at, // Or map based on a specific status/timestamp if available
-        status: 'processed', // Placeholder: Determine status based on record fields if applicable
+        createdAt: record.created_at, // Assuming created_at represents received time
+        updatedAt: record.updated_at, // Or map based on a specific status/timestamp if available
         payload: parsedPayload, 
-        errorDetails: undefined, // Map from a specific error column if it exists
-        providerId: record.provider_id,
+        providerId: record.provider_id as UtilityProvider,
         subscribedEventId: record.subscribed_event_id,
-        conversationId: record.conversation_id,
-        agentId: record.agent_id,
-        // webhookSecret is intentionally omitted from the API response type
+        conversationId: record.conversation_id as string,
+        agentId: record.agent_id as string,
+        webhookSecret: record.webhook_secret,
     };
 };
