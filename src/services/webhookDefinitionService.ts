@@ -6,7 +6,14 @@
  */
 import { query } from '../lib/db.js';
 import { WebhookRecord } from '../types/db.js';
-import { WebhookData, Webhook, WebhookProviderId, UtilitySecretType } from '@agent-base/types';
+import { 
+    WebhookData, 
+    Webhook, 
+    WebhookProviderId, 
+    UtilitySecretType, 
+    SearchWebhookResult,
+    SearchWebhookResultItem
+} from '@agent-base/types';
 import pgvector from 'pgvector/pg'; // Import for vector type usage
 import { v4 as uuidv4 } from 'uuid'; // For generating webhook IDs
 import { constructWebhookTargetUrl } from '../lib/urlUtils.js'; // Import the helper
@@ -145,87 +152,109 @@ export const getWebhookById = async (id: string): Promise<Webhook | null> => {
  * @param clientUserId The ID of the client user who created the webhooks.
  * @param queryVector The vector representation of the search query, or null to list all.
  * @param limit The maximum number of results to return.
- * @returns An array of matching Webhooks, enhanced with URL and link status.
+ * @returns An object containing the items and total count of matching webhooks.
  * @throws Error if database query fails.
  */
-export const searchWebhooks = async (clientUserId: string, queryVector: number[] | null, limit: number): Promise<Webhook[]> => {
-  let sql: string;
-  let queryParams: any[];
+export const searchWebhooks = async (
+    clientUserId: string,
+    queryVector: number[] | null,
+    limit: number
+): Promise<SearchWebhookResult> => {
+    let sql: string;
+    let queryParams: any[];
+    let countSql: string;
+    let countParams: any[];
 
-  if (queryVector) {
-    const embeddingSql = pgvector.toSql(queryVector);
-    sql = `
-      SELECT *, 1 - (embedding <=> $1) AS similarity
-      FROM webhooks
-      WHERE creator_client_user_id = $3 -- Filter by clientUserId
-      ORDER BY embedding <=> $1
-      LIMIT $2;
-    `;
-    queryParams = [embeddingSql, limit, clientUserId];
-  } else {
-    // No queryVector, fetch all webhooks for the user, ordered by creation date
-    sql = `
-      SELECT *
-      FROM webhooks
-      WHERE creator_client_user_id = $1
-      ORDER BY created_at DESC
-      LIMIT $2;
-    `;
-    queryParams = [clientUserId, limit];
-  }
+    if (queryVector) {
+        const embeddingSql = pgvector.toSql(queryVector);
+        sql = `
+            SELECT *, 1 - (embedding <=> $1) AS similarity
+            FROM webhooks
+            WHERE creator_client_user_id = $3 -- Filter by clientUserId
+            ORDER BY embedding <=> $1
+            LIMIT $2;
+        `;
+        queryParams = [embeddingSql, limit, clientUserId];
 
-  try {
-    // The result type from the query might not have 'similarity' if queryVector is null
-    const result = await query<WebhookRecord & { similarity?: number }>(sql, queryParams);
-    
-    const enhancedWebhooks: Webhook[] = await Promise.all(
-      result.rows.map(async (record: WebhookRecord & { similarity?: number }) => { // Explicitly type 'record'
-        const baseWebhook = await mapWebhookRecordToWebhook(record); // webhookUrl is now undefined here
-        // Construct webhookUrl here as clientUserId is available
-        let webhookUrl: string | undefined = undefined;
-        if (baseWebhook.webhookProviderId && baseWebhook.subscribedEventId) {
-          webhookUrl = await constructWebhookTargetUrl(baseWebhook, clientUserId);
-        } else {
-          console.warn(`Could not construct webhookUrl for webhook ID ${baseWebhook.id} in searchWebhooks due to missing provider or event ID.`);
-        }
+        // Count query for vector search (WHERE clause matches)
+        countSql = `SELECT COUNT(*) FROM webhooks WHERE creator_client_user_id = $1`;
+        // For vector search count, we usually count all items matching the filter, 
+        // not just those above a similarity threshold, unless specified.
+        countParams = [clientUserId]; 
+    } else {
+        // No queryVector, fetch all webhooks for the user, ordered by creation date
+        sql = `
+            SELECT *
+            FROM webhooks
+            WHERE creator_client_user_id = $1
+            ORDER BY created_at DESC
+            LIMIT $2;
+        `;
+        queryParams = [clientUserId, limit];
 
-        // UserWebhook link details
-        const userLink = await userWebhookLinkService.findUserWebhook(baseWebhook.id, clientUserId);
-        const isLinkedToCurrentUser = !!userLink; // Boolean: true if userLink exists
-        const currentUserWebhookStatus = userLink ? userLink.status : undefined; // Actual status or undefined
-
-        // 3. Check if linked to an agent (in the context of this user)
-        let linkedAgentId: string | undefined = undefined;
-        let isLinkedToAgent = false; // Default to false, will become true if an agent is linked
-        // Ensure userLink and its platformUserId are valid before proceeding
-        if (userLink && userLink.platformUserId) { 
-            const agentLinkRecord = await agentWebhookLinkService.findAgentLink(baseWebhook.id, clientUserId);
-            if (agentLinkRecord && agentLinkRecord.agentId) {
-                linkedAgentId = agentLinkRecord.agentId;
-                isLinkedToAgent = true; // Set to true if agent is linked
-            }
-        }
-
-        return {
-          ...baseWebhook, 
-          webhookUrl, // Add the computed webhookUrl
-          isLinkedToCurrentUser,    // Populate based on userLink existence
-          currentUserWebhookStatus, // Populate with actual status from userLink
-          isLinkedToAgent,          // Populate with explicit boolean
-          linkedAgentId,            // Populate with agent ID or undefined
-        };
-      })
-    );
-    
-    return enhancedWebhooks;
-  } catch (err) {
-    console.error("Error searching webhooks:", err);
-    if (err instanceof Error && err.message.includes('column "embedding" does not exist')) {
-        console.warn('Search failed: Webhook embedding column likely missing or not populated.');
-        return [];
+        // Count query for non-vector search
+        countSql = `SELECT COUNT(*) FROM webhooks WHERE creator_client_user_id = $1`;
+        countParams = [clientUserId];
     }
-    throw new Error(`Database error searching webhooks: ${err instanceof Error ? err.message : String(err)}`);
-  }
+
+    try {
+        // Execute count query
+        const countResult = await query<{ count: string }>(countSql, countParams);
+        const totalCount = parseInt(countResult.rows[0]?.count || '0', 10);
+
+        // If count is 0, return early
+        if (totalCount === 0) {
+            return { items: [], total: totalCount };
+        }
+
+        // The result type from the query might not have 'similarity' if queryVector is null
+        const result = await query<WebhookRecord & { similarity?: number }>(sql, queryParams);
+        
+        // Map to SearchWebhookResultItem
+        const searchResultItems: SearchWebhookResultItem[] = await Promise.all(
+            result.rows.map(async (record: WebhookRecord & { similarity?: number }) => { // Explicitly type 'record'
+                // Directly use record fields relevant to SearchWebhookResultItem
+                // UserWebhook link details
+                const userLink = await userWebhookLinkService.findUserWebhook(record.id, clientUserId);
+                const isLinkedToCurrentUser = !!userLink; // Boolean: true if userLink exists
+                const currentUserWebhookStatus = userLink ? userLink.status : undefined; // Actual status or undefined
+
+                // 3. Check if linked to an agent (in the context of this user)
+                let linkedAgentId: string | undefined = undefined;
+                let isLinkedToAgent = false; // Default to false, will become true if an agent is linked
+                // Ensure userLink and its platformUserId are valid before proceeding
+                if (userLink && userLink.platformUserId) { 
+                    const agentLinkRecord = await agentWebhookLinkService.findAgentLink(record.id, clientUserId);
+                    if (agentLinkRecord && agentLinkRecord.agentId) {
+                        linkedAgentId = agentLinkRecord.agentId;
+                        isLinkedToAgent = true; // Set to true if agent is linked
+                    }
+                }
+
+                // Construct SearchWebhookResultItem
+                return {
+                    id: record.id,
+                    name: record.name,
+                    description: record.description,
+                    webhookProviderId: record.webhook_provider_id,
+                    subscribedEventId: record.subscribed_event_id,
+                    isLinkedToCurrentUser,    // Populate based on userLink existence
+                    currentUserWebhookStatus, // Populate with actual status from userLink
+                    isLinkedToAgent,          // Populate with explicit boolean
+                    linkedAgentId,            // Populate with agent ID or undefined
+                };
+            })
+        );
+        
+        return { items: searchResultItems, total: totalCount };
+    } catch (err) {
+        console.error("Error searching webhooks:", err);
+        if (err instanceof Error && err.message.includes('column "embedding" does not exist')) {
+            console.warn('Search failed: Webhook embedding column likely missing or not populated.');
+            return { items: [], total: 0 };
+        }
+        throw new Error(`Database error searching webhooks: ${err instanceof Error ? err.message : String(err)}`);
+    }
 };
 
 /**
@@ -270,16 +299,16 @@ const mapWebhookRecordToWebhook = async (record: WebhookRecord): Promise<Webhook
   };
 };
 
-
-
 /**
  * Retrieves all webhook definitions created by a specific client user, enhanced with linkage information.
  *
  * @param clientUserId The ID of the client user who created the webhooks.
- * @returns An array of fully populated Webhook objects.
+ * @returns An object containing the items and total count of matching webhooks.
  * @throws Error if database query fails.
  */
-export const getUserCreatedWebhooksService = async (clientUserId: string): Promise<Webhook[]> => {
+export const getUserCreatedWebhooksService = async (
+    clientUserId: string
+): Promise<SearchWebhookResult> => {
     const sql = `
         SELECT *
         FROM webhooks
@@ -289,19 +318,11 @@ export const getUserCreatedWebhooksService = async (clientUserId: string): Promi
     try {
         const result = await query<WebhookRecord>(sql, [clientUserId]);
         
-        const enhancedWebhooks: Webhook[] = await Promise.all(
+        const searchResultItems: SearchWebhookResultItem[] = await Promise.all(
             result.rows.map(async (record: WebhookRecord) => {
-                const baseWebhook = await mapWebhookRecordToWebhook(record); // webhookUrl is undefined here
-                // Construct webhookUrl here as clientUserId is available
-                let webhookUrl: string | undefined = undefined;
-                if (baseWebhook.webhookProviderId && baseWebhook.subscribedEventId) {
-                    webhookUrl = await constructWebhookTargetUrl(baseWebhook, clientUserId);
-                } else {
-                    console.warn(`Could not construct webhookUrl for webhook ID ${baseWebhook.id} in getUserCreatedWebhooksService due to missing provider or event ID.`);
-                }
-
+                // Directly map record fields + linkage info to SearchWebhookResultItem
                 // Get UserWebhook link details
-                const userLink = await userWebhookLinkService.findUserWebhook(baseWebhook.id, clientUserId);
+                const userLink = await userWebhookLinkService.findUserWebhook(record.id, clientUserId);
                 const isLinkedToCurrentUser = !!userLink;
                 const currentUserWebhookStatus = userLink ? userLink.status : undefined;
 
@@ -309,7 +330,7 @@ export const getUserCreatedWebhooksService = async (clientUserId: string): Promi
                 let linkedAgentId: string | undefined = undefined;
                 let isLinkedToAgent = false;
                 if (userLink && userLink.platformUserId) {
-                    const agentLinkRecord = await agentWebhookLinkService.findAgentLink(baseWebhook.id, clientUserId);
+                    const agentLinkRecord = await agentWebhookLinkService.findAgentLink(record.id, clientUserId);
                     if (agentLinkRecord && agentLinkRecord.agentId) {
                         linkedAgentId = agentLinkRecord.agentId;
                         isLinkedToAgent = true;
@@ -317,8 +338,11 @@ export const getUserCreatedWebhooksService = async (clientUserId: string): Promi
                 }
 
                 return {
-                    ...baseWebhook,
-                    webhookUrl,
+                    id: record.id,
+                    name: record.name,
+                    description: record.description,
+                    webhookProviderId: record.webhook_provider_id,
+                    subscribedEventId: record.subscribed_event_id,
                     isLinkedToCurrentUser,
                     currentUserWebhookStatus,
                     isLinkedToAgent,
@@ -326,7 +350,7 @@ export const getUserCreatedWebhooksService = async (clientUserId: string): Promi
                 };
             })
         );
-        return enhancedWebhooks;
+        return { items: searchResultItems, total: searchResultItems.length };
     } catch (err) {
         console.error("Error retrieving user's created webhooks:", err);
         throw new Error(`Database error retrieving created webhooks: ${err instanceof Error ? err.message : String(err)}`);

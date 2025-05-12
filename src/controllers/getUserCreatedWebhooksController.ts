@@ -10,7 +10,6 @@ import {
 } from '@agent-base/types';
 import { 
     getUserCreatedWebhooksService, 
-    mapWebhookRecordToWebhook 
 } from '../services/webhookDefinitionService.js'; 
 import { AuthenticatedRequest } from '../middleware/auth.js';
 
@@ -24,9 +23,6 @@ export const getUserCreatedWebhooksController = async (req: Request, res: Respon
 
         // Call the updated service function which now returns fully populated Webhook[]
         const webhooksApp = await getUserCreatedWebhooksService(clientUserId); 
-        
-        // The mapping is now done within the service, no need for: 
-        // const webhooksApp = results.map(mapWebhookRecordToWebhook);
         
         // Prepare the success response
         const response: SuccessResponse<Webhook[]> = { success: true, data: webhooksApp };
