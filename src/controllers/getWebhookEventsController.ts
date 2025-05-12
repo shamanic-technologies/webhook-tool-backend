@@ -59,10 +59,12 @@ export const getWebhookEventsController = async (
         // Send the response back to the client
         // Handle potential error responses from the service
         if (!serviceResponse.success) {
+            console.error('Error fetching webhook events:', serviceResponse.error);
             // Determine appropriate status code based on error type if possible
             const statusCode = (serviceResponse as ErrorResponse).error === 'Not Found' ? 404 : 500;
             res.status(statusCode).json(serviceResponse);
         } else {
+            console.log('Successfully fetched webhook events:', serviceResponse.data);
             res.status(200).json(serviceResponse);
         }
 
