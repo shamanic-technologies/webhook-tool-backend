@@ -22,6 +22,7 @@ import {
 } from '../services/agentWebhookLinkService.js';
 import { extractValueFromJson } from '../lib/jsonUtils.js'; // Still needed for conversation_id
 import { getWebhookById } from '../services/webhookDefinitionService.js';
+import { processResolvedWebhook } from '../services/webhookProcessorService.js';
 
 interface IncomingWebhookParams {
     webhookProviderId: string;
@@ -117,7 +118,9 @@ export const incomingWebhookController = async (req: Request<IncomingWebhookPara
         const extractedConvId = extractValueFromJson(payload, webhook.conversationIdIdentificationMapping);
         if (extractedConvId !== null && extractedConvId !== undefined) {
             conversationIdString = String(extractedConvId);
-        } else {
+        }
+        
+        if (!conversationIdString) {
             console.warn(`conversationId could not be extracted for webhook ID: ${webhook.id} using mapping '${webhook.conversationIdIdentificationMapping}'. This is a required field for resolution.`);
             return res.status(400).json({
                 success: false,
@@ -126,12 +129,26 @@ export const incomingWebhookController = async (req: Request<IncomingWebhookPara
                 hint: "Update the webhook definition's conversation ID mapping, it doesn't match any field in the payload."
             });
         }
-        
 
-        console.log("Webhook resolved successfully");
+        const processingParams = {
+            platformUserId: { platformUserId: userWebhook.platformUserId }, // Construct PlatformUserId object
+            clientUserId: userWebhook.clientUserId,   // Get from the validated userWebhook link
+            agentId: agentLink.agentId,             // Get from the validated agent link
+            conversationId: conversationIdString, // Use the extracted string
+            webhookProviderId: webhook.webhookProviderId, // Use validated provider ID
+            subscribedEventId: webhook.subscribedEventId, // Use validated event ID
+            payload: payload,                     // The request body
+            webhookId: webhook.id,                // Get ID from the webhook definition
+            webhookSecret: secret                 // The secret from the query param
+        };
+
+        // Trigger the background processing (fire and forget - no await)
+        processResolvedWebhook(processingParams);
+
+        console.log(`Webhook resolved successfully for ${webhookProviderId}/${subscribedEventId}. Async processing triggered.`);
         res.status(200).json({
             success: true,
-            data: "Webhook resolved successfully"
+            data: "Webhook resolved successfully" // Keep response simple and fast
         });
 
     } catch (error) {
