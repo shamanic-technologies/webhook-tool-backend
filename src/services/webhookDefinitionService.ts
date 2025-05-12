@@ -14,48 +14,47 @@ import { constructWebhookTargetUrl } from '../lib/urlUtils.js'; // Import the he
 // --- Import UserWebhookLinkService and AgentWebhookLinkService ---
 import * as userWebhookLinkService from './userWebhookLinkService.js';
 import * as agentWebhookLinkService from './agentWebhookLinkService.js';
-import { getUserWebhookByWebhookIdAndClientUserId } from './userWebhookLinkService.js';
 
 // --- Helper Function for Schema Path Validation --- 
 
-/**
- * Validates if a dot-notation path exists within a given JSON schema structure.
- * Primarily checks nested properties.
- *
- * @param schema The JSON schema object.
- * @param path The dot-notation path string (e.g., "data.user.id").
- * @returns True if the path exists in the schema, false otherwise.
- */
-const _validatePathInSchema = (schema: any, path: string): boolean => {
-    if (!schema || typeof schema !== 'object' || !path) {
-        return false;
-    }
-    const segments = path.split('.');
-    let currentLevel = schema;
+// /**
+//  * Validates if a dot-notation path exists within a given JSON schema structure.
+//  * Primarily checks nested properties.
+//  *
+//  * @param schema The JSON schema object.
+//  * @param path The dot-notation path string (e.g., "data.user.id").
+//  * @returns True if the path exists in the schema, false otherwise.
+//  */
+// const _validatePathInSchema = (schema: any, path: string): boolean => {
+//     if (!schema || typeof schema !== 'object' || !path) {
+//         return false;
+//     }
+//     const segments = path.split('.');
+//     let currentLevel = schema;
 
-    for (const segment of segments) {
-        // Check if the current level is an object and has properties
-        if (currentLevel && typeof currentLevel === 'object' && currentLevel.properties) {
-            // Check if the segment exists within the properties
-            if (currentLevel.properties.hasOwnProperty(segment)) {
-                currentLevel = currentLevel.properties[segment]; // Move to the next level
-            } else {
-                return false; // Segment not found in properties
-            }
-        } else {
-            // Handle cases where the path references a top-level primitive or schema is malformed
-            // For this validation, we primarily care about nested properties structure
-            // A simple top-level check might be needed if the first segment isn't in properties
-            if (segments.length === 1 && currentLevel.hasOwnProperty(segment)) {
-                 return true; // Path is just a single top-level property
-            } 
-            // If not a recognized structure with properties for nesting, path is invalid
-            return false;
-        }
-    }
-    // If we successfully traversed all segments, the path exists
-    return true;
-};
+//     for (const segment of segments) {
+//         // Check if the current level is an object and has properties
+//         if (currentLevel && typeof currentLevel === 'object' && currentLevel.properties) {
+//             // Check if the segment exists within the properties
+//             if (currentLevel.properties.hasOwnProperty(segment)) {
+//                 currentLevel = currentLevel.properties[segment]; // Move to the next level
+//             } else {
+//                 return false; // Segment not found in properties
+//             }
+//         } else {
+//             // Handle cases where the path references a top-level primitive or schema is malformed
+//             // For this validation, we primarily care about nested properties structure
+//             // A simple top-level check might be needed if the first segment isn't in properties
+//             if (segments.length === 1 && currentLevel.hasOwnProperty(segment)) {
+//                  return true; // Path is just a single top-level property
+//             } 
+//             // If not a recognized structure with properties for nesting, path is invalid
+//             return false;
+//         }
+//     }
+//     // If we successfully traversed all segments, the path exists
+//     return true;
+// };
 
 /**
  * Creates a new webhook definition in the database.
@@ -77,59 +76,21 @@ export const createWebhook = async (
       description, 
       webhookProviderId, 
       subscribedEventId, 
-      requiredSecrets, 
-      clientUserIdentificationMapping, // Correct app-level name
       conversationIdIdentificationMapping, // Correct app-level name
-      eventPayloadSchema 
     } = webhookData;
   
     // --- Validation Step --- 
-    if (!eventPayloadSchema || typeof eventPayloadSchema !== 'object') {
-        throw new Error('Validation Error: eventPayloadSchema must be provided as an object.');
-    }
-    if (!clientUserIdentificationMapping || typeof clientUserIdentificationMapping !== 'object'){
-        throw new Error('Validation Error: clientUserIdentificationMapping must be provided as an object.');
-    }
     if (!conversationIdIdentificationMapping || typeof conversationIdIdentificationMapping !== 'string') {
         throw new Error('Validation Error: conversationIdIdentificationMapping must be provided as a string.');
     }
-    if (!requiredSecrets || !Array.isArray(requiredSecrets)) {
-        throw new Error('Validation Error: requiredSecrets must be provided as an array.');
-    }
-
-    // 1. Validate clientUserIdentificationMapping paths against schema and requiredSecrets
-    for (const [secretType, path] of Object.entries(clientUserIdentificationMapping)) {
-        if (typeof path !== 'string') {
-             throw new Error(`Validation Error: Path for client identifier '${secretType}' must be a string.`);
-        }
-        if (!_validatePathInSchema(eventPayloadSchema, path)) {
-            throw new Error(`Validation Error: Path '${path}' for client identifier '${secretType}' not found in eventPayloadSchema.`);
-        }
-        if (!requiredSecrets.includes(secretType as UtilitySecretType)) {
-            throw new Error(`Validation Error: Client identifier '${secretType}' is mapped but not listed in requiredSecrets.`);
-        }
-    }
-
-    // 2. Validate conversationIdIdentificationMapping path against schema
-    if (!_validatePathInSchema(eventPayloadSchema, conversationIdIdentificationMapping)) {
-        throw new Error(`Validation Error: Path '${conversationIdIdentificationMapping}' for conversation identifier not found in eventPayloadSchema.`);
-    }
     // --- End Validation --- 
   
-    // Convert arrays/objects to JSON strings for PG
-    const requiredSecretsJson = JSON.stringify(requiredSecrets);
-    const clientMappingJson = JSON.stringify(clientUserIdentificationMapping);
-    // conversationIdIdentificationMapping is already a string
-    const eventPayloadSchemaJson = JSON.stringify(eventPayloadSchema);
     const embeddingSql = embedding ? pgvector.toSql(embedding) : null;
   
     const sql = `
       INSERT INTO webhooks (
         id, name, description, webhook_provider_id, subscribed_event_id, 
-        required_secrets, 
-        client_user_identification_mapping, -- Correct DB column
         conversation_id_identification_mapping, -- Correct DB column
-        event_payload_schema, 
         embedding, 
         creator_client_user_id, -- Add new column here
         created_at, 
@@ -141,17 +102,14 @@ export const createWebhook = async (
     try {
       const result = await query<WebhookRecord>(sql, [
         newId, name, description, webhookProviderId, subscribedEventId,
-        requiredSecretsJson, 
-        clientMappingJson, // Pass JSON string for JSONB column
         conversationIdIdentificationMapping, // Pass string directly for TEXT column
-        eventPayloadSchemaJson, 
         embeddingSql,
         clientUserId // Pass the clientUserId for the new column
       ]);
       if (result.rows.length === 0) {
         throw new Error("Failed to create webhook definition, INSERT query returned no rows.");
       }
-      return mapWebhookRecordToWebhook(result.rows[0], clientUserId);
+      return mapWebhookRecordToWebhook(result.rows[0]);
     } catch (err) {
       console.error("Error creating webhook definition:", err);
       throw new Error(`Database error creating webhook definition: ${err instanceof Error ? err.message : String(err)}`);
@@ -165,7 +123,7 @@ export const createWebhook = async (
  * @returns The WebhookRecord or null if not found.
  * @throws Error if database query fails.
  */
-export const getWebhookById = async (id: string, clientUserId: string): Promise<Webhook | null> => {
+export const getWebhookById = async (id: string): Promise<Webhook | null> => {
   const sql = "SELECT * FROM webhooks WHERE id = $1";
   try {
     const result = await query<WebhookRecord>(sql, [id]);
@@ -174,7 +132,7 @@ export const getWebhookById = async (id: string, clientUserId: string): Promise<
     }
 
     // TODO: Consider parsing JSON fields here if needed immediately, though mapping does it
-    return mapWebhookRecordToWebhook(result.rows[0], clientUserId);
+    return mapWebhookRecordToWebhook(result.rows[0]);
   } catch (err) {
     console.error("Error retrieving webhook by ID:", err);
     throw new Error(`Database error retrieving webhook: ${err instanceof Error ? err.message : String(err)}`);
@@ -222,7 +180,7 @@ export const searchWebhooks = async (clientUserId: string, queryVector: number[]
     
     const enhancedWebhooks: Webhook[] = await Promise.all(
       result.rows.map(async (record: WebhookRecord & { similarity?: number }) => { // Explicitly type 'record'
-        const baseWebhook = await mapWebhookRecordToWebhook(record, clientUserId); // webhookUrl is now undefined here
+        const baseWebhook = await mapWebhookRecordToWebhook(record); // webhookUrl is now undefined here
         // Construct webhookUrl here as clientUserId is available
         let webhookUrl: string | undefined = undefined;
         if (baseWebhook.webhookProviderId && baseWebhook.subscribedEventId) {
@@ -241,7 +199,7 @@ export const searchWebhooks = async (clientUserId: string, queryVector: number[]
         let isLinkedToAgent = false; // Default to false, will become true if an agent is linked
         // Ensure userLink and its platformUserId are valid before proceeding
         if (userLink && userLink.platformUserId) { 
-            const agentLinkRecord = await agentWebhookLinkService.findAgentLink(baseWebhook.id, clientUserId, userLink.platformUserId);
+            const agentLinkRecord = await agentWebhookLinkService.findAgentLink(baseWebhook.id, clientUserId);
             if (agentLinkRecord && agentLinkRecord.agentId) {
                 linkedAgentId = agentLinkRecord.agentId;
                 isLinkedToAgent = true; // Set to true if agent is linked
@@ -299,17 +257,7 @@ export const getWebhookRecordsByProviderAndEvent = async (
  * Helper to convert DB record to application-level Webhook type.
  * Assumes JSON fields are parsed correctly by the DB driver or need parsing here.
  */
-export const mapWebhookRecordToWebhook = async (record: WebhookRecord, clientUserId: string): Promise<Webhook> => {
-    const webhook = await _mapWebhookRecordToWebhook(record);
-    webhook.webhookUrl = await constructWebhookTargetUrl(webhook, clientUserId);
-    return webhook;
-};
-
-/**
- * Helper to convert DB record to application-level Webhook type.
- * Assumes JSON fields are parsed correctly by the DB driver or need parsing here.
- */
-const _mapWebhookRecordToWebhook = async (record: WebhookRecord): Promise<Webhook> => {
+const mapWebhookRecordToWebhook = async (record: WebhookRecord): Promise<Webhook> => {
 
   return {
       id: record.id,
@@ -317,10 +265,7 @@ const _mapWebhookRecordToWebhook = async (record: WebhookRecord): Promise<Webhoo
       description: record.description,
       webhookProviderId: record.webhook_provider_id,
       subscribedEventId: record.subscribed_event_id,
-      requiredSecrets: [],
-      clientUserIdentificationMapping: {},
       conversationIdIdentificationMapping: record.conversation_id_identification_mapping,
-      eventPayloadSchema: {},
       creatorClientUserId: record.creator_client_user_id,
   };
 };
@@ -346,7 +291,7 @@ export const getUserCreatedWebhooksService = async (clientUserId: string): Promi
         
         const enhancedWebhooks: Webhook[] = await Promise.all(
             result.rows.map(async (record: WebhookRecord) => {
-                const baseWebhook = await mapWebhookRecordToWebhook(record, clientUserId); // webhookUrl is undefined here
+                const baseWebhook = await mapWebhookRecordToWebhook(record); // webhookUrl is undefined here
                 // Construct webhookUrl here as clientUserId is available
                 let webhookUrl: string | undefined = undefined;
                 if (baseWebhook.webhookProviderId && baseWebhook.subscribedEventId) {
@@ -364,7 +309,7 @@ export const getUserCreatedWebhooksService = async (clientUserId: string): Promi
                 let linkedAgentId: string | undefined = undefined;
                 let isLinkedToAgent = false;
                 if (userLink && userLink.platformUserId) {
-                    const agentLinkRecord = await agentWebhookLinkService.findAgentLink(baseWebhook.id, clientUserId, userLink.platformUserId);
+                    const agentLinkRecord = await agentWebhookLinkService.findAgentLink(baseWebhook.id, clientUserId);
                     if (agentLinkRecord && agentLinkRecord.agentId) {
                         linkedAgentId = agentLinkRecord.agentId;
                         isLinkedToAgent = true;

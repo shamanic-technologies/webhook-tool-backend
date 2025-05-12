@@ -9,7 +9,7 @@ import { createWebhookController } from '../controllers/createWebhookController.
 import { searchWebhooksController } from '../controllers/searchWebhooksController.js';
 import { linkUserController } from '../controllers/linkUserController.js';
 import { linkAgentController } from '../controllers/linkAgentController.js';
-import { resolveWebhookController } from '../controllers/resolveWebhookController.js';
+import { incomingWebhookController } from '../controllers/incomingWebhookController.js';
 import { getUserCreatedWebhooksController } from '../controllers/getUserCreatedWebhooksController.js';
 import { testWebhookController } from '../controllers/testWebhookController.js';
 import { authMiddleware } from '../middleware/auth.js';
@@ -18,7 +18,7 @@ const router: Router = Router();
 
 // Define public routes FIRST
 // Route for internal gateway service to resolve incoming webhooks - NO AUTH
-router.post('/resolve', resolveWebhookController);
+router.post('/incoming/:webhookProviderId/:subscribedEventId/:clientUserId', incomingWebhookController);
 
 // Routes requiring standard user/service authentication
 const authenticatedRouter = Router();

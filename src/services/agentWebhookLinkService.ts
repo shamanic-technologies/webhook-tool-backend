@@ -6,7 +6,7 @@
  */
 import { query } from '../lib/db.js';
 import { WebhookAgentLinkRecord } from '../types/db.js';
-import { WebhookAgentLink } from '@agent-base/types';
+import { AgentUserWebhook } from '@agent-base/types';
 
 /**
  * Links an agent to an existing user-webhook configuration.
@@ -19,11 +19,11 @@ import { WebhookAgentLink } from '@agent-base/types';
  * @returns The newly created or existing WebhookAgentLinkRecord.
  */
 export const linkAgentToWebhook = async (
-    webhookId: string, 
-    clientUserId: string, 
+    webhookId: string,
+    clientUserId: string,
     platformUserId: string,
     agentId: string
-): Promise<WebhookAgentLink> => {
+): Promise<AgentUserWebhook> => {
     // Include platform_user_id in the INSERT statement
     const sql = `
         INSERT INTO webhook_agent_links (webhook_id, client_user_id, platform_user_id, agent_id, created_at)
@@ -33,7 +33,7 @@ export const linkAgentToWebhook = async (
     `;
     try {
         // Pass all four arguments to the query
-        const result = await query<WebhookAgentLinkRecord>(sql, [webhookId, clientUserId, platformUserId, agentId]); 
+        const result = await query<WebhookAgentLinkRecord>(sql, [webhookId, clientUserId, platformUserId, agentId]);
          if (result.rows.length === 0) {
              // If ON CONFLICT DO NOTHING and it conflicted, re-fetch the existing record.
              // findWebhookAgentLink should also be updated if platformUserId becomes part of the key, but currently it isn't.
@@ -56,7 +56,7 @@ export const linkAgentToWebhook = async (
  * @param agentId The ID of the agent.
  * @returns The WebhookAgentLinkRecord or null if not found.
  */
-export const findWebhookAgentLink = async (webhookId: string, clientUserId: string, agentId: string): Promise<WebhookAgentLink | null> => {
+export const findWebhookAgentLink = async (webhookId: string, clientUserId: string, agentId: string): Promise<AgentUserWebhook | null> => {
     const sql = "SELECT * FROM webhook_agent_links WHERE webhook_id = $1 AND client_user_id = $2 AND agent_id = $3";
     try {
         const result = await query<WebhookAgentLinkRecord>(sql, [webhookId, clientUserId, agentId]);
@@ -78,8 +78,7 @@ export const findWebhookAgentLink = async (webhookId: string, clientUserId: stri
 export const findAgentLink = async (
     webhookId: string, 
     clientUserId: string, 
-    platformUserId: string
-): Promise<WebhookAgentLink | null> => {
+): Promise<AgentUserWebhook | null> => {
     const sql = `
         SELECT * 
         FROM webhook_agent_links 
@@ -100,7 +99,7 @@ export const findAgentLink = async (
  */
 export const mapWebhookAgentLinkRecordToWebhookAgentLink = (
     record: WebhookAgentLinkRecord
-): WebhookAgentLink => {
+): AgentUserWebhook => {
     return {
         webhookId: record.webhook_id,
         clientUserId: record.client_user_id,

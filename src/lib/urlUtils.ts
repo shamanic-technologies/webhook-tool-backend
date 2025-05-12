@@ -2,8 +2,7 @@
  * Utility functions for URL construction.
  */
 import { Webhook } from "@agent-base/types";
-import { getUserWebhookByWebhookIdAndClientUserId } from "../services/userWebhookLinkService.js";
-import { WebhookRecord } from "../types/db.js";
+import { findUserWebhook } from "../services/userWebhookLinkService.js";
 /**
  * Constructs the target URL for a webhook.
  * This URL is typically used as the endpoint where webhook events are sent.
@@ -25,6 +24,13 @@ export async function constructWebhookTargetUrl(
       "WEBHOOK_URL environment variable is not set. Cannot construct target URL.",
     );
   }
-  const userWebhook = await getUserWebhookByWebhookIdAndClientUserId(webhook.id, clientUserId);
-  return `${baseWebhookUrl}/${webhook.webhookProviderId}/${webhook.subscribedEventId}/${clientUserId}?secret=${userWebhook.webhookSecret}`;
+  const userWebhook = await findUserWebhook(webhook.id, clientUserId);
+  if (!userWebhook || !userWebhook.webhookSecret) {
+    // If the user webhook link doesn't exist or is missing a secret (which shouldn't happen for an active link),
+    // we cannot construct a valid target URL.
+    throw new Error(
+      `Failed to construct target URL: UserWebhook link for webhook ID ${webhook.id} and client user ID ${clientUserId} not found or is missing a secret.`
+    );
+  }
+  return `${baseWebhookUrl}/api/v1/webhooks/${webhook.webhookProviderId}/${webhook.subscribedEventId}/${clientUserId}?secret=${userWebhook.webhookSecret}`;
 } 

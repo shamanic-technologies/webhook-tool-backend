@@ -5,8 +5,8 @@
  * linking users to webhooks (user_webhooks table).
  */
 import { query } from '../lib/db.js';
-import { UserWebhookRecord } from '../types/db.js';
-import { WebhookStatus, UserWebhook } from '@agent-base/types';
+import { UserWebhookRecord, WebhookRecord } from '../types/db.js';
+import { WebhookStatus, UserWebhook, UtilitySecretType, WebhookProviderId, Webhook } from '@agent-base/types';
 import { randomUUID } from 'crypto'; // Added for generating webhook_secret
 
 /**
@@ -122,15 +122,15 @@ export const updateUserWebhookStatus = async (
     }
 };
 
-// Get UserWebhook by webhookId and clientUserId
-export const getUserWebhookByWebhookIdAndClientUserId = async (webhookId: string, clientUserId: string): Promise<UserWebhook> => {
-    const sql = "SELECT * FROM user_webhooks WHERE webhook_id = $1 AND client_user_id = $2";
-    const result = await query<UserWebhookRecord>(sql, [webhookId, clientUserId]);
-    if (result.rows.length === 0) {
-        throw new Error(`User webhook link not found for webhookId ${webhookId} and clientUserId ${clientUserId}`);
-    }
-    return mapUserWebhookRecordToUserWebhook(result.rows[0]);
-};
+// // Get UserWebhook by webhookId and clientUserId
+// export const getUserWebhookByWebhookIdAndClientUserId = async (webhookId: string, clientUserId: string): Promise<UserWebhook> => {
+//     const sql = "SELECT * FROM user_webhooks WHERE webhook_id = $1 AND client_user_id = $2";
+//     const result = await query<UserWebhookRecord>(sql, [webhookId, clientUserId]);
+//     if (result.rows.length === 0) {
+//         throw new Error(`User webhook link not found for webhookId ${webhookId} and clientUserId ${clientUserId}`);
+//     }
+//     return mapUserWebhookRecordToUserWebhook(result.rows[0]);
+// };
 
 /**
  * Helper to convert DB record to application-level UserWebhook type.
@@ -144,6 +144,37 @@ export const mapUserWebhookRecordToUserWebhook = (record: UserWebhookRecord): Us
         webhookSecret: record.webhook_secret,
         createdAt: record.created_at,
     };
+};
+
+/**
+ * Finds an active UserWebhook link and its associated Webhook definition (as Webhook type)
+ * by matching provider, event, client user ID, and the unique webhook secret.
+ *
+ * @param webhookProviderId The ID of the webhook provider.
+ * @param subscribedEventId The ID of the subscribed event.
+ * @param clientUserId The ID of the client user.
+ * @param secret The unique secret from the webhook URL.
+ * @returns A Promise resolving to an object containing the UserWebhook and its Webhook (application type), or null if not found or not active.
+ */
+export const findUserWebhookBySecret = async (
+    secret: string
+): Promise<UserWebhook | null> => {
+    // We select all fields from both tables and will separate them in the application logic
+    const sql = `
+        SELECT *
+        FROM user_webhooks uw
+        WHERE uw.webhook_secret = $1;
+    `;
+    try {
+        const result = await query<any>(sql, [secret]);
+        if (result.rows.length === 0) {return null;}
+        const record = result.rows[0];
+        const userWebhook: UserWebhook = mapUserWebhookRecordToUserWebhook(record as UserWebhookRecord);
+        return userWebhook;
+    } catch (err) {
+        console.error("Error finding active user webhook by secret with definition:", err);
+        throw new Error(`Database error finding active user webhook by secret: ${err instanceof Error ? err.message : String(err)}`);
+    }
 };
 
 // // Function to find user webhook by hash (needed for resolver)

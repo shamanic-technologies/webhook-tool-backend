@@ -140,11 +140,6 @@ async function _checkWebhookSetupStatus(
     missingConfirmations.push(confirmationSecretDbType);
   }
 
-
-
-
-
-
   if ( missingConfirmations.length > 0) {
     const setupNeededData: SetupNeeded = {
       needsSetup: true,
@@ -153,10 +148,11 @@ async function _checkWebhookSetupStatus(
       title: `Webhook Setup Required for ${webhook.name}`,
       message: `Additional setup is needed to activate this webhook`,
       description: `
-      1. Provide a clickable link for the user to input into ${webhook.webhookProviderId}.
+      1. Provide a clickable link for the user to input the webhook URL into ${webhook.webhookProviderId}'s dashboard.
       2. Provide guidance for the user to enable the event ${webhook.subscribedEventId}
-      3. Provide guidance for the user to click on Confirm button once done.
-      4. Once done, call again this tool to confirm the status of the webhook link.`,
+      3. Provide guidance for the user to click on "Confirm" button within the current chat interface once done.
+      4. Once clicked, ask the user to notify you.
+      5. Once notified, call again this tool to confirm the status of the webhook link.`,
       webhookUrlToInput: webhookUrlToInput, // Provide the full URL for the user
       ...(missingConfirmations.length > 0 && {
         requiredActionConfirmations: missingConfirmations,
@@ -189,7 +185,7 @@ export const linkUserController = async (
     const { webhookId, clientUserId, platformUserId } = validation;
 
     // 1. Get the generic webhook definition
-    const webhook = await getWebhookByIdService(webhookId, clientUserId);
+    const webhook = await getWebhookByIdService(webhookId);
     if (!webhook) {
       return res.status(404).json({
         success: false,
@@ -213,12 +209,11 @@ export const linkUserController = async (
         webhookId,
         clientUserId,
         platformUserId,
-        WebhookStatus.PENDING, // New links start as PENDING until setup is confirmed
+        WebhookStatus.UNSET, // New links start as UNSET until setup is confirmed
       );
     }
     
     const currentStatus = userWebhookLink.status;
-    const userWebhookSecret = userWebhookLink.webhookSecret; // Crucial for constructing the callback URL
 
     // 3. Check setup status (confirm URL input, provide operational secrets)
     // We pass webhookDefinition and the specific userWebhookSecret
@@ -231,7 +226,7 @@ export const linkUserController = async (
         finalUserWebhookLink = await updateUserWebhookStatusService( 
           webhookId,
           clientUserId,
-          WebhookStatus.PENDING,
+          WebhookStatus.UNSET,
         );
       }
       const response: SuccessResponse<SetupNeeded> = {
