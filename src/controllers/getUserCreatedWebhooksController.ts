@@ -6,7 +6,8 @@ import { Response, NextFunction, Request } from 'express';
 import { 
     Webhook, 
     ServiceResponse, 
-    SuccessResponse 
+    SuccessResponse,
+    SearchWebhookResult
 } from '@agent-base/types';
 import { 
     getUserCreatedWebhooksService, 
@@ -16,7 +17,7 @@ import { AuthenticatedRequest } from '../middleware/auth.js';
 /**
  * Controller for POST /get-user-created-webhooks - Fetch webhooks created by the user.
  */
-export const getUserCreatedWebhooksController = async (req: Request, res: Response<ServiceResponse<Webhook[]>>, next: NextFunction) => {
+export const getUserCreatedWebhooksController = async (req: Request, res: Response<ServiceResponse<SearchWebhookResult>>, next: NextFunction) => {
     try {
         // clientUserId is guaranteed to be a string by authMiddleware.
         const clientUserId = (req as AuthenticatedRequest).serviceCredentials!.clientUserId!;
@@ -25,7 +26,7 @@ export const getUserCreatedWebhooksController = async (req: Request, res: Respon
         const webhooksApp = await getUserCreatedWebhooksService(clientUserId); 
         
         // Prepare the success response
-        const response: SuccessResponse<Webhook[]> = { success: true, data: webhooksApp };
+        const response: SuccessResponse<SearchWebhookResult> = { success: true, data: webhooksApp };
         res.status(200).json(response);
 
     } catch (error) {
