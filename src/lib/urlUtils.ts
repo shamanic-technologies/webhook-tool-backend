@@ -32,5 +32,5 @@ export async function constructWebhookTargetUrl(
       `Failed to construct target URL: UserWebhook link for webhook ID ${webhook.id} and client user ID ${clientUserId} not found or is missing a secret.`
     );
   }
-  return `${baseWebhookUrl}/api/v1/webhooks/${webhook.webhookProviderId}/${webhook.subscribedEventId}/${clientUserId}?secret=${userWebhook.webhookSecret}`;
+  return `${baseWebhookUrl}/api/v1/webhooks/incoming/${webhook.webhookProviderId}/${webhook.subscribedEventId}/${clientUserId}?secret=${userWebhook.webhookSecret}`;
 } 
