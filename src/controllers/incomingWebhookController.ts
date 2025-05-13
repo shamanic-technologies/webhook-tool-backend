@@ -131,7 +131,7 @@ export const incomingWebhookController = async (req: Request<IncomingWebhookPara
         }
 
         const processingParams = {
-            platformUserId: { platformUserId: userWebhook.platformUserId }, // Construct PlatformUserId object
+            platformUserId: userWebhook.platformUserId, // Construct PlatformUserId object
             clientUserId: userWebhook.clientUserId,   // Get from the validated userWebhook link
             agentId: agentLink.agentId,             // Get from the validated agent link
             conversationId: conversationIdString, // Use the extracted string

@@ -38,7 +38,7 @@ interface LogWebhookEventParams {
     conversationId: string;
     webhookId: string;
     agentId: string;
-    platformUserId: PlatformUserId;
+    platformUserId: string; // Changed type to string
 }
 
 /**
@@ -49,7 +49,8 @@ interface LogWebhookEventParams {
 const _logWebhookEvent = async (params: LogWebhookEventParams): Promise<void> => {
     const { 
         payload, providerId, subscribedEventId, clientUserId, 
-        webhookSecret, conversationId, webhookId, agentId, platformUserId
+        webhookSecret, conversationId, webhookId, agentId, 
+        platformUserId // Now expects a string
     } = params;
 
     try {
@@ -72,7 +73,7 @@ const _logWebhookEvent = async (params: LogWebhookEventParams): Promise<void> =>
             conversationId,
             webhookId,
             agentId,
-            platformUserId
+            platformUserId // Now correctly passing the string to the query
         ]);
         
         if (result.rows.length > 0) {
@@ -91,7 +92,7 @@ const _logWebhookEvent = async (params: LogWebhookEventParams): Promise<void> =>
  * Interface defining the parameters required for asynchronous webhook processing.
  */
 interface ProcessWebhookParams {
-    platformUserId: PlatformUserId;
+    platformUserId: string;
     clientUserId: string; // Use string for clientUserId
     agentId: string;
     conversationId: string;
@@ -136,7 +137,7 @@ export const processResolvedWebhook = async (params: ProcessWebhookParams): Prom
         conversationId,
         webhookId,
         agentId,
-        platformUserId
+        platformUserId // Extract the string ID
     });
 
     try {
