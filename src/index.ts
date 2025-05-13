@@ -85,7 +85,7 @@ app.get('/health', (req: Request, res: Response) => {
 
 // --- Apply Global API Key Authentication ---
 // Apply to all routes below this point
-app.use(apiKeyAuth);
+// app.use(apiKeyAuth); // REMOVED: Apply middleware selectively in webhookRoutes.ts
 
 // Mount webhook routes under /api/v1
 // These routes will now require the API key via the middleware above

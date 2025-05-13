@@ -13,6 +13,7 @@ import { incomingWebhookController } from '../controllers/incomingWebhookControl
 import { getUserCreatedWebhooksController } from '../controllers/getUserCreatedWebhooksController.js';
 import { getWebhookEventsController } from '../controllers/getWebhookEventsController.js';
 import { authMiddleware } from '../middleware/auth.js';
+import { apiKeyAuth } from '../middleware/apiKeyAuth.js';
 
 const router: Router = Router();
 
@@ -22,6 +23,7 @@ router.post('/incoming/:webhookProviderId/:subscribedEventId/:clientUserId', inc
 
 // Routes requiring standard user/service authentication
 const authenticatedRouter = Router();
+authenticatedRouter.use(apiKeyAuth);
 authenticatedRouter.use(authMiddleware);
 
 authenticatedRouter.post('/', createWebhookController);
