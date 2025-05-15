@@ -117,14 +117,16 @@ This service is designed to work with the `@agent-base/types` and `@agent-base/a
 Base URL: Most endpoints are prefixed with `/api/v1`. The incoming webhook endpoint has a different structure.
 
 Authentication:
-*   Most routes require authentication via specific HTTP headers.
-*   The following headers are generally required for authenticated routes:
-    *   `x-platform-api-key`: Your platform API key.
-    *   `x-platform-user-id`: The ID of the platform user.
-    *   `x-client-user-id`: The ID of the client user. This service uses this ID to scope operations.
-*   If required headers are missing, the service will typically respond with a `401 Unauthorized` error.
+*   Most routes (all except `/health` and `/incoming/...`) require a dual authentication mechanism:
+    1.  An `Authorization` header with a Bearer token:
+        *   `Authorization: Bearer YOUR_WEBHOOK_TOOL_API_KEY` (This key comes from the `WEBHOOK_TOOL_API_KEY` environment variable of the service).
+    2.  A set of `x-platform-*` headers:
+        *   `x-platform-api-key`: Your API key (should be the same value as `YOUR_WEBHOOK_TOOL_API_KEY` used in the Bearer token).
+        *   `x-platform-user-id`: The ID of the platform user.
+        *   `x-client-user-id`: The ID of the client user. This service uses this ID to scope operations.
+*   If required headers are missing or invalid, the service will typically respond with a `401 Unauthorized` or `403 Forbidden` error.
 *   The `/health` endpoint requires no authentication.
-*   The incoming webhook endpoint (`/incoming/...`) uses a `secret` query parameter for authentication.
+*   The `/incoming/:webhookProviderId/:subscribedEventId/:clientUserId` endpoint uses a `secret` query parameter for authentication and does not use the Bearer token or `x-platform-*` headers.
 
 ---
 
@@ -136,7 +138,7 @@ Authentication:
 **`POST /api/v1/webhooks`** (Create Webhook Definition)
 
 *   Creates a new webhook configuration.
-*   **Authentication:** Requires `x-platform-api-key`, `x-platform-user-id`, `x-client-user-id` headers.
+*   **Authentication:** Requires `Authorization: Bearer <WEBHOOK_TOOL_API_KEY>` and `x-platform-api-key`, `x-platform-user-id`, `x-client-user-id` headers.
 *   **Body:** `WebhookData` (from `@agent-base/types`)
     *   Example:
         ```json
@@ -155,21 +157,21 @@ Authentication:
 
 *   Searches for webhooks based on a query string. The search is performed only within the webhooks created by the `clientUserId` from the authentication context.
 *   The vector embedding generation for semantic search is currently a placeholder.
-*   **Authentication:** Requires `x-platform-api-key`, `x-platform-user-id`, `x-client-user-id` headers.
+*   **Authentication:** Requires `Authorization: Bearer <WEBHOOK_TOOL_API_KEY>` and `x-platform-api-key`, `x-platform-user-id`, `x-client-user-id` headers.
 *   **Body:** `{ "query": string, "limit"?: number }`
 *   **Response:** `ServiceResponse<SearchWebhookResult>`
 
 **`POST /api/v1/webhooks/get-user-created`** (Get User-Created Webhook Definitions)
 
 *   Fetches all webhook definitions created by the authenticated `clientUserId`.
-*   **Authentication:** Requires `x-platform-api-key`, `x-platform-user-id`, `x-client-user-id` headers.
+*   **Authentication:** Requires `Authorization: Bearer <WEBHOOK_TOOL_API_KEY>` and `x-platform-api-key`, `x-platform-user-id`, `x-client-user-id` headers.
 *   **Body:** None
 *   **Response:** `ServiceResponse<SearchWebhookResult>`
 
 **`POST /api/v1/webhooks/:webhookId/link-user`** (Link User to Webhook)
 
 *   Links a specific client user to a webhook definition. Checks if setup (secrets/confirmation) is needed.
-*   **Authentication:** Requires `x-platform-api-key`, `x-platform-user-id`, `x-client-user-id` headers.
+*   **Authentication:** Requires `Authorization: Bearer <WEBHOOK_TOOL_API_KEY>` and `x-platform-api-key`, `x-platform-user-id`, `x-client-user-id` headers.
 *   **Params:** `:webhookId` (UUID)
 *   **Body:** None
 *   **Response:**
@@ -179,7 +181,7 @@ Authentication:
 **`POST /api/v1/webhooks/:webhookId/link-agent`** (Link Agent to User-Webhook Link)
 
 *   Links an agent to an existing, *active* user-webhook link.
-*   **Authentication:** Requires `x-platform-api-key`, `x-platform-user-id`, `x-client-user-id` headers.
+*   **Authentication:** Requires `Authorization: Bearer <WEBHOOK_TOOL_API_KEY>` and `x-platform-api-key`, `x-platform-user-id`, `x-client-user-id` headers.
 *   **Params:** `:webhookId` (UUID)
 *   **Body:** `{ "agentId": string }` (agentId must be a valid UUID)
 *   **Response:** `ServiceResponse<WebhookAgentLink>`
@@ -187,7 +189,7 @@ Authentication:
 **`GET /api/v1/webhooks/:webhookId/events`** (Get Webhook Events)
 
 *   Retrieves recorded webhook events for a specific webhook ID, scoped to the authenticated `clientUserId`.
-*   **Authentication:** Requires `x-platform-api-key`, `x-platform-user-id`, `x-client-user-id` headers.
+*   **Authentication:** Requires `Authorization: Bearer <WEBHOOK_TOOL_API_KEY>` and `x-platform-api-key`, `x-platform-user-id`, `x-client-user-id` headers.
 *   **Params:** `:webhookId` (UUID)
 *   **Body:** None
 *   **Response:** `ServiceResponse<WebhookEvent[]>`
@@ -195,7 +197,7 @@ Authentication:
 **`POST /incoming/:webhookProviderId/:subscribedEventId/:clientUserId`** (Handle Incoming Webhook Event)
 
 *   Endpoint where third-party services send webhook events.
-*   **Authentication:** Uses a `secret` query parameter (e.g., `?secret=YOUR_UNIQUE_SECRET`). It does **not** use the standard `x-platform-*` headers.
+*   **Authentication:** Uses a `secret` query parameter (e.g., `?secret=YOUR_UNIQUE_SECRET`). It does **not** use the `Authorization` Bearer token or `x-platform-*` headers.
 *   **Params:**
     *   `:webhookProviderId`: Identifier of the webhook provider (e.g., "gmail").
     *   `:subscribedEventId`: Identifier of the specific event being sent (e.g., "new_email").
