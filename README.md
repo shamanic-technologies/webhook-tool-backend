@@ -141,15 +141,12 @@ Authentication:
     *   Example:
         ```json
         {
-            "name": "Test Crisp Events",
-            "description": "Test handler for Crisp messages",
+            "name": "Crisp New Message",
+            "description": "Handles new messages from Crisp chat",
             "webhookProviderId": "crisp",
-            "subscribedEventId": "evt_test_crisp_123",
-            "requiredSecrets": ["CRISP_API_IDENTIFIER", "CRISP_API_KEY"],
-            "clientUserIdentificationMapping": { "CRISP_API_IDENTIFIER": "data.website_id" },
+            "subscribedEventId": "message:send",
             "conversationIdIdentificationMapping": "data.session_id",
-            "eventPayloadSchema": { "type": "object" },
-            "creatorClientUserId": "client_user_abc123"
+            "creatorClientUserId": "YOUR_CLIENT_USER_ID_EXAMPLE"
         }
         ```
 *   **Response:** `ServiceResponse<Webhook>`
