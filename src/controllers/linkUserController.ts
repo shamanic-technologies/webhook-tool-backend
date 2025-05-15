@@ -217,6 +217,7 @@ export const linkUserController = async (
       const response: SuccessResponse<SetupNeeded> = {
         success: true,
         data: setupStatus.setupNeededData!,
+        hint: "Once confirmation from the user that the setup is complete, call again this tool to activate the webhook user link"
       };
       return res.status(200).json(response);
     } else {
@@ -232,6 +233,7 @@ export const linkUserController = async (
       const response: SuccessResponse<UserWebhook> = {
         success: true,
         data: finalUserWebhook,
+        hint: "Now you can link this webhook to an agent (take yourself by default) by calling the webhook link agent tool",
       };
       return res.status(isNewLink ? 201 : 200).json(response);
     }

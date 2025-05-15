@@ -59,6 +59,7 @@ export const createWebhookController = async (
     const response: SuccessResponse<Webhook> = {
       success: true,
       data: newWebhook,
+      hint: "Now you can link this webhook to the user by calling the webhook link user tool",
     };
     console.log("DEBUG: Create Webhook Response:", JSON.stringify(response));
     res.status(201).json(response);

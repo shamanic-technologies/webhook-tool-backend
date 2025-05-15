@@ -39,7 +39,12 @@ export const searchWebhooksController = async (req: Request, res: Response<Servi
 
         // searchWebhooksService will need to handle a null queryVector
         const webhooksApp = await searchWebhooksService(clientUserId, queryVector, limit);
-        const response: SuccessResponse<SearchWebhookResult> = { success: true, data: webhooksApp };
+        const response: SuccessResponse<SearchWebhookResult> = {
+            success: true,
+            data: webhooksApp,
+            hint: `Now you can link any of those webhooks to the user by calling the webhook link user tool.
+            If you didn't find what you are looking for then conduct an other research or create a new webhook by calling the create webhook tool`
+        };
         console.log('DEBUG: Search Webhook Response:', JSON.stringify(response));
         res.status(200).json(response);
 

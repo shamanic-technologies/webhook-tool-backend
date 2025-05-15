@@ -3,7 +3,7 @@
  */
 import { Response, NextFunction, Request } from 'express';
 import { 
-    WebhookAgentLink, 
+    AgentUserWebhook, 
     ServiceResponse, 
     SuccessResponse, 
     WebhookStatus 
@@ -20,7 +20,7 @@ import { validate as uuidValidate } from 'uuid';
 /**
  * Controller for POST /:webhookId/link-agent - Link a webhook to an agent.
  */
-export const linkAgentController = async (req: Request, res: Response<ServiceResponse<WebhookAgentLink>>, next: NextFunction) => {
+export const linkAgentController = async (req: Request, res: Response<ServiceResponse<AgentUserWebhook>>, next: NextFunction) => {
     console.log('>>> Entering linkAgentController');
     try {
         const paramsValidation = WebhookIdParamsSchema.safeParse(req.params);
@@ -66,7 +66,17 @@ export const linkAgentController = async (req: Request, res: Response<ServiceRes
 
         // Pass platformUserId to the service function
         const agentLink = await linkAgentToWebhookService(webhookId, clientUserId, platformUserId, agentId);
-        const response: SuccessResponse<WebhookAgentLink> = { success: true, data: agentLink };
+        const response: SuccessResponse<AgentUserWebhook> = {
+            success: true,
+            data: agentLink,
+            hint: `Now you can test the webhook by calling the curl command and ask the user to check the sidebar on the left of the dashboard to confirm that he sees the event. If he sees the event, the webhook is working.
+            If he sees the event with success then you are all set.
+            If he sees the event with an error message then ask them to paste that message to you.
+            If he doestnot see the event, it might be that:
+            - The webhook url has not been properly inputed in the provider dashboard
+            - The subscribed event has not been properly turned on for the specific webhook in the provider dashboard
+            - An internal error: in that case contact the support`
+        };
         console.log('DEBUG: Link Agent Response:', JSON.stringify(response));
         res.status(201).json(response);
 
