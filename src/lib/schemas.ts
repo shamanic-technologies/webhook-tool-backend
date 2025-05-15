@@ -21,25 +21,8 @@ export const CreateWebhookSchema = z.object({
   // Use z.string() - refine with z.enum if UtilityProvider enum object is available at runtime
   webhookProviderId: z.string().min(1, { message: 'Invalid webhookProviderId' }),
   subscribedEventId: z.string().min(1, { message: "Subscribed event ID is required" }),
-  // Use z.string() - refine with z.enum if UtilitySecretType enum object is available at runtime
-  requiredSecrets: z.array(z.string()).min(0), // Can be empty array
-  // Renamed from userIdentificationMapping
-  clientUserIdentificationMapping: z.record(z.string(), z.string(), {
-    invalid_type_error: "clientUserIdentificationMapping must be an object mapping secret type string to string"
-  })
-  // Add refinement to check keys against UtilityInputSecret enum values
-  .refine(mapping => {
-      const allowedKeys = Object.values(UtilityInputSecret);
-      return Object.keys(mapping).every(key => allowedKeys.includes(key as UtilityInputSecret));
-    }, {
-      message: `Keys in clientUserIdentificationMapping must be valid UtilityInputSecret values (e.g., ${Object.values(UtilityInputSecret).join(', ')})`,
-      path: ['clientUserIdentificationMapping'] // Specify the path of the error
-  }),
   // Added conversationIdIdentificationMapping
   conversationIdIdentificationMapping: z.string().min(1, { message: "conversationIdIdentificationMapping is required" }),
-  eventPayloadSchema: z.record(z.string(), z.unknown(), {
-    invalid_type_error: "eventPayloadSchema must be an object"
-  }),
   // Add embedding if it needs to be provided during creation
   // embedding: z.array(z.number()).optional(),
 });

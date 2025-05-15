@@ -8,10 +8,10 @@ import {
   SuccessResponse,
   UtilityProvider,
   ErrorResponse,
+  WebhookData,
 } from "@agent-base/types";
 import {
   createWebhook,
-  mapWebhookRecordToWebhook,
 } from "../services/webhookDefinitionService.js";
 import { generateEmbedding } from "../lib/embeddingUtils.js";
 import { CreateWebhookSchema } from "../lib/schemas.js";
@@ -38,29 +38,15 @@ export const createWebhookController = async (
         .json(formatValidationError(validationResult.error));
     }
 
-    const webhookData = {
+    const webhookData : WebhookData = {
       ...validationResult.data,
       webhookProviderId: validationResult.data
         .webhookProviderId as UtilityProvider,
-      requiredSecrets: validationResult.data.requiredSecrets,
-      clientUserIdentificationMapping:
-        validationResult.data.clientUserIdentificationMapping,
       conversationIdIdentificationMapping:
         validationResult.data.conversationIdIdentificationMapping,
-      creatorClientUserId: clientUserId,
+      creatorClientUserId: clientUserId
     };
 
-    // Validate input consistency: Ensure all keys in clientUserIdentificationMapping
-    // are also present in requiredSecrets.
-    for (const secretTypeNeededForMapping in webhookData.clientUserIdentificationMapping) {
-      if (!webhookData.requiredSecrets.includes(secretTypeNeededForMapping)) {
-        return res.status(400).json({
-          success: false,
-          error: "Validation Error",
-          details: `Secret '${secretTypeNeededForMapping}' is used in clientUserIdentificationMapping but not listed in requiredSecrets.`,
-        } as ErrorResponse);
-      }
-    }
 
     const embedding = await generateEmbedding(
       `${webhookData.name} ${webhookData.description}`,

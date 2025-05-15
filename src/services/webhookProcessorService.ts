@@ -178,8 +178,8 @@ export const processResolvedWebhook = async (params: ProcessWebhookParams): Prom
         // --- 4. Prepare and Trigger Agent Run ---
         // Construct a user message containing the webhook payload details.
         const messageContent = `
-        You received this webhook event from ${webhookProviderId}/${subscribedEventId} with the following payload:
-        \`\`\`json\n${JSON.stringify(payload, null, 2)}\n\`\`\`
+        This is an automated message from ${webhookProviderId}/${subscribedEventId}. You received this webhook event with the following payload:
+        ${JSON.stringify(payload, null, 2)}
         `;
 
         const webhookMessage: Message = {

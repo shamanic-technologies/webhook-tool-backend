@@ -114,16 +114,17 @@ This service is designed to work with the `@agent-base/types` and `@agent-base/a
 
 ## API Endpoints
 
-Base URL: `/api/v1/webhooks` (except for `/health`)
+Base URL: Most endpoints are prefixed with `/api/v1`. The incoming webhook endpoint has a different structure.
 
 Authentication:
-*   All routes (except `/health`) require authentication via specific HTTP headers.
-*   The following headers **must** be included in your requests:
+*   Most routes require authentication via specific HTTP headers.
+*   The following headers are generally required for authenticated routes:
     *   `x-platform-api-key`: Your platform API key.
     *   `x-platform-user-id`: The ID of the platform user.
-    *   `x-client-user-id`: The ID of the client user. This service uses this ID to scope operations like search and webhook creation to the specific client user.
-*   If any of these headers are missing, the service will respond with a `401 Unauthorized` error.
+    *   `x-client-user-id`: The ID of the client user. This service uses this ID to scope operations.
+*   If required headers are missing, the service will typically respond with a `401 Unauthorized` error.
 *   The `/health` endpoint requires no authentication.
+*   The incoming webhook endpoint (`/incoming/...`) uses a `secret` query parameter for authentication.
 
 ---
 
@@ -135,10 +136,7 @@ Authentication:
 **`POST /api/v1/webhooks`** (Create Webhook Definition)
 
 *   Creates a new webhook configuration.
-*   **Headers:**
-    *   `x-platform-api-key: YOUR_PLATFORM_API_KEY`
-    *   `x-platform-user-id: YOUR_PLATFORM_USER_ID`
-    *   `x-client-user-id: YOUR_CLIENT_USER_ID`
+*   **Authentication:** Requires `x-platform-api-key`, `x-platform-user-id`, `x-client-user-id` headers.
 *   **Body:** `WebhookData` (from `@agent-base/types`)
     *   Example:
         ```json
@@ -150,82 +148,74 @@ Authentication:
             "requiredSecrets": ["CRISP_API_IDENTIFIER", "CRISP_API_KEY"],
             "clientUserIdentificationMapping": { "CRISP_API_IDENTIFIER": "data.website_id" },
             "conversationIdIdentificationMapping": "data.session_id",
-            "eventPayloadSchema": { "type": "object" }
+            "eventPayloadSchema": { "type": "object" },
+            "creatorClientUserId": "client_user_abc123"
         }
         ```
 *   **Response:** `ServiceResponse<Webhook>`
 
 **`POST /api/v1/webhooks/search`** (Search Webhook Definitions)
 
-*   Searches for webhooks based on a query string. The search is performed only within the webhooks created by the `clientUserId` provided in the `x-client-user-id` authentication header.
+*   Searches for webhooks based on a query string. The search is performed only within the webhooks created by the `clientUserId` from the authentication context.
 *   The vector embedding generation for semantic search is currently a placeholder.
-*   **Headers:**
-    *   `x-platform-api-key: YOUR_PLATFORM_API_KEY`
-    *   `x-platform-user-id: YOUR_PLATFORM_USER_ID`
-    *   `x-client-user-id: YOUR_CLIENT_USER_ID`
+*   **Authentication:** Requires `x-platform-api-key`, `x-platform-user-id`, `x-client-user-id` headers.
 *   **Body:** `{ "query": string, "limit"?: number }`
-*   **Response:** `ServiceResponse<Webhook[]>`
-    *   Each `Webhook` object in the response array will include the standard webhook definition fields, plus:
-        *   `webhookUrl: string` - The full dynamically constructed URL for this webhook (e.g., `YOUR_WEBHOOK_URL/providerId/subscribedEventId`).
-        *   `isLinkedToCurrentUser?: boolean` - True if this webhook definition has an active or pending link to the `clientUserId` that made the search request.
-        *   `linkedAgentId?: string` - If `isLinkedToCurrentUser` is true and an agent is linked to that user-webhook association, this field will contain the `agentId`.
+*   **Response:** `ServiceResponse<SearchWebhookResult>`
+
+**`POST /api/v1/webhooks/get-user-created`** (Get User-Created Webhook Definitions)
+
+*   Fetches all webhook definitions created by the authenticated `clientUserId`.
+*   **Authentication:** Requires `x-platform-api-key`, `x-platform-user-id`, `x-client-user-id` headers.
+*   **Body:** None
+*   **Response:** `ServiceResponse<SearchWebhookResult>`
 
 **`POST /api/v1/webhooks/:webhookId/link-user`** (Link User to Webhook)
 
 *   Links a specific client user to a webhook definition. Checks if setup (secrets/confirmation) is needed.
-*   **Headers:**
-    *   `x-platform-api-key: YOUR_PLATFORM_API_KEY`
-    *   `x-platform-user-id: YOUR_PLATFORM_USER_ID`
-    *   `x-client-user-id: YOUR_CLIENT_USER_ID`
+*   **Authentication:** Requires `x-platform-api-key`, `x-platform-user-id`, `x-client-user-id` headers.
 *   **Params:** `:webhookId` (UUID)
 *   **Body:** None
-*   **Response:** 
-    *   If setup needed: `ServiceResponse<SetupNeeded>` 
+*   **Response:**
+    *   If setup needed: `ServiceResponse<SetupNeeded>`
     *   If setup complete: `ServiceResponse<UserWebhook>` (Status 201 if new link, 200 if existing)
 
 **`POST /api/v1/webhooks/:webhookId/link-agent`** (Link Agent to User-Webhook Link)
 
 *   Links an agent to an existing, *active* user-webhook link.
-*   **Headers:**
-    *   `x-platform-api-key: YOUR_PLATFORM_API_KEY`
-    *   `x-platform-user-id: YOUR_PLATFORM_USER_ID`
-    *   `x-client-user-id: YOUR_CLIENT_USER_ID`
+*   **Authentication:** Requires `x-platform-api-key`, `x-platform-user-id`, `x-client-user-id` headers.
 *   **Params:** `:webhookId` (UUID)
 *   **Body:** `{ "agentId": string }` (agentId must be a valid UUID)
 *   **Response:** `ServiceResponse<WebhookAgentLink>`
 
-**`POST /api/v1/webhooks/:webhookId/test`** (Test Webhook Execution)
+**`GET /api/v1/webhooks/:webhookId/events`** (Get Webhook Events)
 
-*   Tests the execution flow for a given webhook, simulating an incoming event and checking if it resolves to an agent and extracts necessary information. This is useful for verifying configuration and secret setup.
-*   **Headers:**
-    *   `x-platform-api-key: YOUR_PLATFORM_API_KEY`
-    *   `x-platform-user-id: YOUR_PLATFORM_USER_ID`
-    *   `x-client-user-id: YOUR_CLIENT_USER_ID`
+*   Retrieves recorded webhook events for a specific webhook ID, scoped to the authenticated `clientUserId`.
+*   **Authentication:** Requires `x-platform-api-key`, `x-platform-user-id`, `x-client-user-id` headers.
 *   **Params:** `:webhookId` (UUID)
 *   **Body:** None
-*   **Response:** `ServiceResponse<WebhookTestResult>`
-    *   `WebhookTestResult` contains details about the test execution, including whether it was successful, any errors encountered, and resolved identifiers.
+*   **Response:** `ServiceResponse<WebhookEvent[]>`
 
-**`POST /api/v1/webhooks/resolve/:webhookProviderId/:subscribedEventId`** (Resolve Incoming Webhook)
+**`POST /incoming/:webhookProviderId/:subscribedEventId/:clientUserId`** (Handle Incoming Webhook Event)
 
-*   Used internally by a gateway to find the linked agent(s) for an incoming webhook event.
-*   **Headers:**
-    *   `x-platform-api-key: YOUR_PLATFORM_API_KEY`
-    *   `x-platform-user-id: YOUR_PLATFORM_USER_ID`
-    *   `x-client-user-id: YOUR_CLIENT_USER_ID` (Note: The service will use this to identify the client context for resolving the webhook)
-*   **Params:** `:webhookProviderId`, `:subscribedEventId`
-*   **Body:** The raw incoming webhook payload (e.g., from Crisp, Gmail, etc.)
+*   Endpoint where third-party services send webhook events.
+*   **Authentication:** Uses a `secret` query parameter (e.g., `?secret=YOUR_UNIQUE_SECRET`). It does **not** use the standard `x-platform-*` headers.
+*   **Params:**
+    *   `:webhookProviderId`: Identifier of the webhook provider (e.g., "gmail").
+    *   `:subscribedEventId`: Identifier of the specific event being sent (e.g., "new_email").
+    *   `:clientUserId`: The client user ID this webhook event is intended for.
+*   **Query Parameter:** `secret=YOUR_USER_WEBHOOK_SECRET` (mandatory for authentication)
+*   **Body:** The raw incoming webhook payload from the third-party service (e.g., JSON payload from Crisp, Gmail, etc.).
     *   Example (Crisp):
         ```json
         {
             "data": {
-                "session_id": "session_crisp_123", 
+                "session_id": "session_crisp_123",
                 "website_id": "website_crisp_abc"
             },
             "event": "message:send"
         }
         ```
-*   **Response:** `ServiceResponse<ResolvedWebhookData>` (Includes `clientUserId`, `platformUserId`, `agentId`, `conversationId`)
+*   **Response:** `ServiceResponse<string>` (e.g., `{"success":true,"data":"Webhook resolved successfully"}`)
 
 ## Contributing
 

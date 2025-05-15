@@ -1,66 +1,93 @@
 import express, { Express, Request, Response, NextFunction } from 'express';
 import dotenv from 'dotenv';
 import crypto from 'crypto'; // Import crypto for key generation
-import { ServiceResponse, ErrorResponse, SecretValue } from '@agent-base/types';
+// import { ServiceResponse, ErrorResponse, SecretValue } from '@agent-base/types'; // SecretValue might still be needed for type hints if not directly from client
+import { ErrorResponse } from '@agent-base/types'; // Keep if used for error responses
 // Import routers
 import webhookRoutes from './routes/webhookRoutes.js'; // Import the router and add .js
-import { authMiddleware } from './middleware/auth.js'; // Keep if needed globally, remove if only on webhookRoutes
-import { apiKeyAuth } from './middleware/apiKeyAuth.js'; // Import the new API key middleware
-import { _getGsmSecretValueByName, _storeGsmSecretByName } from './lib/gsm.js'; // Import GSM helpers
+// import { authMiddleware } from './middleware/auth.js'; // Keep if needed globally, remove if only on webhookRoutes
+// import { apiKeyAuth } from './middleware/apiKeyAuth.js'; // Import the new API key middleware
+// import { _getGsmSecretValueByName, _storeGsmSecretByName } from './lib/gsm.js'; // Removed
+import { GoogleSecretManager, GoogleCloudSecretManagerApiError } from '@agent-base/secret-client';
 
-dotenv.config(); // Call it and store the result
-
-// --- End Debug dotenv loading ---
+dotenv.config(); 
 
 // --- Configuration Store ---
-// Simple in-memory config store, expand if needed
 interface AppConfig {
     hmacKey: string | null;
+    // Potentially export gsmClient if needed elsewhere, or pass it down
 }
 
 const appConfig: AppConfig = {
-    hmacKey: null, // Will be loaded asynchronously
+    hmacKey: null,
 };
 
 // Export config for use in controllers/services
-// Note: Ensure this is accessed only *after* initializeConfig completes
 export { appConfig }; 
 
+// --- GSM Client (to be initialized) ---
+// This can be exported if other parts of the application need direct access
+// Or, individual functions can be exposed that use this client.
+export let gsmClient: GoogleSecretManager;
+
 // --- Initialization Function ---
-const HMAC_SECRET_NAME = 'webhook-identifier-hmac-key'; // GSM Secret ID
+const HMAC_SECRET_NAME = 'webhook-identifier-hmac-key'; // GSM Secret ID for the application's HMAC key
 
 async function initializeConfig() {
     console.log('Initializing configuration...');
     const projectId = process.env.GOOGLE_PROJECT_ID;
     if (!projectId) {
-        throw new Error("GOOGLE_PROJECT_ID environment variable is not set.");
+        console.error("FATAL ERROR: GOOGLE_PROJECT_ID environment variable is not set.");
+        process.exit(1);
     }
-    const fullSecretName = `projects/${projectId}/secrets/${HMAC_SECRET_NAME}`;
+
+    let credentialsJson;
+    if (process.env.GOOGLE_CREDENTIALS_JSON) {
+        try {
+            credentialsJson = JSON.parse(process.env.GOOGLE_CREDENTIALS_JSON);
+        } catch (e) {
+            console.error("Failed to parse GOOGLE_CREDENTIALS_JSON. Falling back to ADC if available.", e);
+            // If parsing fails, credentialsJson remains undefined, and the client will attempt ADC
+        }
+    }
 
     try {
-        const hmacKeyResponse : ServiceResponse<SecretValue> = await _getGsmSecretValueByName(fullSecretName);
-
-        let hmacKey = hmacKeyResponse.data?.value;
-
-        if (!hmacKeyResponse.success || !hmacKey) {
-            console.log('HMAC key not found or invalid in GSM. Generating and storing a new key...');
-            // Generate a new 32-byte (256-bit) key, hex encoded
-            const newKey = crypto.randomBytes(32).toString('hex');
-            const storedResponse = await _storeGsmSecretByName(HMAC_SECRET_NAME, newKey);
-            if (!storedResponse.success) {
-                throw new Error('Failed to store newly generated HMAC key in GSM.');
-            }
-            hmacKey = newKey;
-        
-        }
-
-        appConfig.hmacKey = hmacKey; // Store the key
-
-
+        gsmClient = new GoogleSecretManager({
+            projectId: projectId,
+            credentials: credentialsJson, 
+        });
     } catch (error) {
-        console.error('FATAL ERROR during configuration initialization:', error);
-        // Decide how to handle failure: exit, run with default (unsafe), etc.
-        process.exit(1); // Exit if config fails
+        console.error('FATAL ERROR: Could not initialize GoogleSecretManager:', error);
+        process.exit(1);
+    }
+
+    try {
+        let hmacKey = await gsmClient.getSecret(HMAC_SECRET_NAME);
+
+        if (!hmacKey) {
+            console.log(`HMAC key '${HMAC_SECRET_NAME}' not found or empty in GSM. Generating and storing a new key...`);
+            const newKey = crypto.randomBytes(32).toString('hex');
+            try {
+                await gsmClient.storeSecret(HMAC_SECRET_NAME, newKey);
+                console.log(`Successfully stored new HMAC key '${HMAC_SECRET_NAME}'.`);
+                hmacKey = newKey;
+            } catch (storeError) {
+                console.error(`FATAL ERROR: Failed to store newly generated HMAC key '${HMAC_SECRET_NAME}' in GSM.`, storeError);
+                process.exit(1);
+            }
+        }
+        appConfig.hmacKey = hmacKey;
+        console.log(`HMAC key '${HMAC_SECRET_NAME}' loaded successfully.`);
+
+    } catch (error: any) { // Explicitly type error
+        // Catch potential errors from getSecret if it's not a SecretNotFoundError (already handled by returning null)
+        // or other unexpected errors during the HMAC key logic.
+        if (error instanceof GoogleCloudSecretManagerApiError) {
+            console.error('FATAL ERROR during HMAC key retrieval from GSM:', error.message, error.originalError || '');
+        } else {
+            console.error('FATAL ERROR during configuration initialization (HMAC key setup):', error);
+        }
+        process.exit(1); 
     }
 }
 
@@ -69,31 +96,16 @@ const app: Express = express();
 const port = process.env.PORT || 3001;
 
 // --- Middleware ---
-
-// Enable JSON body parsing
 app.use(express.json());
 
-// Placeholder for authentication middleware (to extract ServiceCredentials)
-// app.use(authMiddleware); 
-
 // --- Routes ---
-
-// Health check endpoint
 app.get('/health', (req: Request, res: Response) => {
-  res.status(200).json({ status: 'ok', provider: 'webhook-store' });
+  res.status(200).json({ status: 'ok', provider: 'webhook-tool' });
 });
 
-// --- Apply Global API Key Authentication ---
-// Apply to all routes below this point
-// app.use(apiKeyAuth); // REMOVED: Apply middleware selectively in webhookRoutes.ts
-
-// Mount webhook routes under /api/v1
-// These routes will now require the API key via the middleware above
 app.use('/api/v1/webhooks', webhookRoutes);
 
 // --- Error Handling ---
-
-// Catch-all for unhandled routes (after defined routes)
 app.use((req: Request, res: Response, next: NextFunction) => {
   const errorResponse: ErrorResponse = {
     success: false,
@@ -104,11 +116,8 @@ app.use((req: Request, res: Response, next: NextFunction) => {
   res.status(404).json(errorResponse);
 });
 
-// Global error handler
-app.use((err: Error, req: Request, res: Response<ServiceResponse<never>>, next: NextFunction) => {
+app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
   console.error('Unhandled Error:', err.stack || err);
-
-  // Determine primary error message for details
   const errorMessage = process.env.NODE_ENV === 'production' ? 'An unexpected internal error occurred.' : err.message;
   const errorStack = process.env.NODE_ENV === 'production' ? undefined : err.stack;
 
@@ -119,26 +128,27 @@ app.use((err: Error, req: Request, res: Response<ServiceResponse<never>>, next: 
     hint: "An unexpected error occurred. If this persists, please check server logs or contact support. For validation errors, ensure your request payload matches the expected schema."
   };
   
-  // Use appropriate status code (e.g., 400 for validation errors)
   const statusCode = err.name === 'ZodError' ? 400 : 500;
   res.status(statusCode).json(errorResponse);
 });
 
 // --- Server Start (after config initialization) ---
-
-// Use an async IIFE to ensure config is loaded before starting the server
 (async () => {
-    await initializeConfig(); // Wait for config to load
-
-    // Ensure HMAC key is loaded before starting
-    if (!appConfig.hmacKey) {
-         console.error("FATAL: HMAC Key not loaded. Server cannot start.");
-         process.exit(1);
+    try {
+        await initializeConfig(); 
+        if (!appConfig.hmacKey) {
+             console.error("FATAL: HMAC Key not loaded after initialization. Server cannot start.");
+             process.exit(1);
+        }
+        app.listen(port, () => {
+            console.log(`[server]: Webhook Tool server is running at http://localhost:${port}`);
+        });
+    } catch (initError: any) { // Explicitly type initError
+        // This catch block might be redundant if initializeConfig already process.exit(1) on all its failure paths.
+        // However, it's a good safety net for any unhandled promise rejection from initializeConfig itself.
+        console.error("FATAL: Unhandled exception during server initialization process.", initError);
+        process.exit(1);
     }
-
-    app.listen(port, () => {
-        console.log(`[server]: Webhook Store server is running at http://localhost:${port}`);
-    });
 })();
 
-export default app; // Export for potential testing 
+export default app; 
