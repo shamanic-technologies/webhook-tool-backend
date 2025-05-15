@@ -161,7 +161,7 @@ Authentication:
 *   **Body:** `{ "query": string, "limit"?: number }`
 *   **Response:** `ServiceResponse<SearchWebhookResult>`
 
-**`POST /api/v1/webhooks/get-user-created`** (Get User-Created Webhook Definitions)
+**`GET /api/v1/webhooks/get-user-created-webhooks`** (Get User-Created Webhook Definitions)
 
 *   Fetches all webhook definitions created by the authenticated `clientUserId`.
 *   **Authentication:** Requires `Authorization: Bearer <WEBHOOK_TOOL_API_KEY>` and `x-platform-api-key`, `x-platform-user-id`, `x-client-user-id` headers.

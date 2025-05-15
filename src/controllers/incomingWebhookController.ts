@@ -10,7 +10,8 @@ import {
     AgentUserWebhook,     // For the linked agent
     UserWebhook,
     Webhook,
-    ServiceResponse,          // For the validated user webhook link
+    ServiceResponse,
+    WebhookStatus,          // For the validated user webhook link
     // WebhookStatus,     // No longer checking status here, service does
 } from '@agent-base/types';
 import { WebhookRecord } from '../types/db.js'; // For the webhook definition details
@@ -75,6 +76,24 @@ export const incomingWebhookController = async (req: Request<IncomingWebhookPara
                 error: 'Unauthorized',
                 details: "Webhook event could not be authenticated or matched to an active user link. The secret may be invalid or the link inactive/misconfigured.",
                 hint: "Verify the webhook secret and ensure the user's webhook link is active and correctly configured for this provider and event."
+            });
+        }
+        if (findUserWebhookResult.status == WebhookStatus.UNSET) {
+            console.warn(`Webhook resolution failed: UserWebhook is unset for Provider=${webhookProviderId}, Event=${subscribedEventId}, ClientUser=${clientUserId} with the provided secret.`);
+            return res.status(401).json({ // 401 Unauthorized, as the secret/combination is invalid
+                success: false,
+                error: 'Unauthorized',
+                details: "The webhook user link is not setup",
+                hint: "Link the webhook to the user by calling the webhook link user tool"
+            });
+        }
+        if (findUserWebhookResult.status == WebhookStatus.DISABLED) {
+            console.warn(`Webhook resolution failed: UserWebhook is disabled for Provider=${webhookProviderId}, Event=${subscribedEventId}, ClientUser=${clientUserId} with the provided secret.`);
+            return res.status(401).json({ // 401 Unauthorized, as the secret/combination is invalid
+                success: false,
+                error: 'Disabled',
+                details: "The webhook is disabled for the current user",
+                hint: "Ask the user to enable the webhook if he wants event payloads to be processed"
             });
         }
 
