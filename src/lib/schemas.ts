@@ -5,10 +5,6 @@
  * and potentially query strings for the webhook store API.
  */
 import { z } from 'zod';
-import { UtilityInputSecret } from '@agent-base/types'; // Import the enum
-// We assume UtilityProvider and UtilitySecretType are string enums or types
-// Using z.string() for broader compatibility, add specific z.enum if runtime enums are guaranteed
-// import { UtilityProvider, UtilitySecretType } from '@agent-base/types'; // Keep import for reference
 
 // Helper for UUID validation
 const uuidSchema = z.string().uuid({ message: "Invalid UUID format" });

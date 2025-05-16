@@ -26,7 +26,7 @@ import {
   findUserWebhook as findUserWebhookService,
 } from "../services/userWebhookLinkService.js";
 import { gsmClient } from "../index.js"; // Import the initialized GSM client
-import { generateApplicationSecretId } from "../lib/secretUtils.js"; // Import the ID generator
+import { generateSecretManagerId } from "@agent-base/secret-client"; // Standard import path
 import { WebhookIdParamsSchema } from "../lib/schemas.js";
 import { formatValidationError } from "../lib/validationUtils.js";
 import { AuthenticatedRequest } from "../middleware/auth.js";
@@ -105,16 +105,19 @@ async function _checkWebhookSetupStatus(
     clientUserId,
   );
   
-  const confirmationSecretDbType =
-    UtilityActionConfirmation.WEBHOOK_URL_INPUTED;
+  // Use the specific enum type for confirmation actions
+  const confirmationActionType = UtilityActionConfirmation.WEBHOOK_URL_INPUTED;
 
   // Check if the user has confirmed inputting the webhook URL
-  const applicationSecretId = generateApplicationSecretId(
+  // The generateSecretManagerId expects a UtilityInputSecret type for secretType.
+  // We assume UtilityActionConfirmation.WEBHOOK_URL_INPUTED (a string enum/constant) 
+  // is compatible or assignable to UtilityInputSecret.
+  const applicationSecretId = generateSecretManagerId(
     UserType.Client,
     clientUserId,
     webhook.webhookProviderId,
-    webhook.subscribedEventId, // using subscribedEventId as sub-provider context
-    confirmationSecretDbType,
+    confirmationActionType as UtilityInputSecret, // Cast to UtilityInputSecret if they are compatible string types
+    webhook.subscribedEventId, 
   );
 
   try {
@@ -122,13 +125,11 @@ async function _checkWebhookSetupStatus(
     const isUrlInputConfirmed = secretValue === "true";
 
     if (!isUrlInputConfirmed) {
-      missingConfirmations.push(confirmationSecretDbType);
+      missingConfirmations.push(confirmationActionType);
     }
   } catch (error: any) {
-    // Handle potential errors from gsmClient.getSecret, though it returns null for not found.
-    // For other errors, log and treat as confirmation not received.
     console.error(`Error checking secret for URL confirmation (${applicationSecretId}):`, error);
-    missingConfirmations.push(confirmationSecretDbType); // Assume not confirmed if error occurs
+    missingConfirmations.push(confirmationActionType); 
   }
 
   if (missingConfirmations.length > 0) {
