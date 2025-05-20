@@ -1,6 +1,8 @@
 import express, { Express, Request, Response, NextFunction } from 'express';
 import dotenv from 'dotenv';
 import crypto from 'crypto'; // Import crypto for key generation
+import fs from 'fs'; // Added for writing temp credentials file
+import path from 'path'; // Added for constructing temp file path
 // import { ServiceResponse, ErrorResponse, SecretValue } from '@agent-base/types'; // SecretValue might still be needed for type hints if not directly from client
 import { ErrorResponse } from '@agent-base/types'; // Keep if used for error responses
 // Import routers
@@ -33,8 +35,36 @@ export let gsmClient: GoogleSecretManager;
 // --- Initialization Function ---
 const HMAC_SECRET_NAME = 'webhook-identifier-hmac-key'; // GSM Secret ID for the application's HMAC key
 
+async function prepareGcpCredentials() {
+    const credsContent = process.env.GOOGLE_APPLICATION_CREDENTIALS;
+    if (credsContent && credsContent.trim().startsWith('{')) {
+        console.log('GOOGLE_APPLICATION_CREDENTIALS appears to be JSON content. Writing to temporary file...');
+        try {
+            // Ensure /tmp directory exists or choose a writable location
+            // In many container environments, /tmp is writable.
+            const tempDir = '/tmp';
+            if (!fs.existsSync(tempDir)) {
+                fs.mkdirSync(tempDir, { recursive: true });
+            }
+            const tempCredPath = path.join(tempDir, 'gcp_creds.json');
+            fs.writeFileSync(tempCredPath, credsContent);
+            process.env.GOOGLE_APPLICATION_CREDENTIALS = tempCredPath; // Override env var for this process
+            console.log(`Credentials written to ${tempCredPath} and GOOGLE_APPLICATION_CREDENTIALS updated.`);
+        } catch (error) {
+            console.error('FATAL ERROR: Failed to write GOOGLE_APPLICATION_CREDENTIALS content to temporary file:', error);
+            process.exit(1);
+        }
+    } else if (credsContent) {
+        console.log('GOOGLE_APPLICATION_CREDENTIALS appears to be a file path. Using as is.');
+    } else {
+        console.warn('GOOGLE_APPLICATION_CREDENTIALS environment variable is not set. Attempting to use Application Default Credentials.');
+    }
+}
+
 async function initializeConfig() {
     console.log('Initializing configuration...');
+    await prepareGcpCredentials(); // Prepare credentials before initializing client
+
     const projectId = process.env.GOOGLE_PROJECT_ID;
     if (!projectId) {
         console.error("FATAL ERROR: GOOGLE_PROJECT_ID environment variable is not set.");
@@ -44,6 +74,7 @@ async function initializeConfig() {
     try {
         gsmClient = new GoogleSecretManager({
             projectId: projectId,
+            // Credentials will be picked up from the (potentially overridden) GOOGLE_APPLICATION_CREDENTIALS env var
         });
     } catch (error) {
         console.error('FATAL ERROR: Could not initialize GoogleSecretManager:', error);
