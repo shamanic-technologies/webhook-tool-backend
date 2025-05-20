@@ -12,3 +12,7 @@ dist
 *.log
 *.md
 !README.md 
+*.tgz
+
+# Service account key
+service-account-key.json
