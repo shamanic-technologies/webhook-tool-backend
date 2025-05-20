@@ -59,12 +59,5 @@
   },
   "engines": {
     "node": ">=18"
-  },
-  "pnpm": {
-    "overrides": {
-      "@agent-base/api-client": "workspace:*",
-      "@agent-base/secret-client": "workspace:*",
-      "@agent-base/types": "workspace:*"
-    }
   }
 }
