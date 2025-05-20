@@ -22,6 +22,10 @@ COPY --from=base /app/node_modules ./node_modules
 COPY --from=base /app/package.json ./
 COPY migrations ./migrations
 
+# Copy the service account key and set the environment variable
+COPY service-account-key.json /app/service-account-key.json
+ENV GOOGLE_APPLICATION_CREDENTIALS=/app/service-account-key.json
+
 ENV NODE_ENV=production
 EXPOSE 3000
 

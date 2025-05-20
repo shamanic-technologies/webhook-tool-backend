@@ -8,7 +8,7 @@ import webhookRoutes from './routes/webhookRoutes.js'; // Import the router and 
 // import { authMiddleware } from './middleware/auth.js'; // Keep if needed globally, remove if only on webhookRoutes
 // import { apiKeyAuth } from './middleware/apiKeyAuth.js'; // Import the new API key middleware
 // import { _getGsmSecretValueByName, _storeGsmSecretByName } from './lib/gsm.js'; // Removed
-import { GoogleSecretManager, GoogleCloudSecretManagerApiError } from '@agent-base/secret-client';
+import { GoogleSecretManager } from '@agent-base/secret-client';
 
 dotenv.config(); 
 
@@ -41,20 +41,9 @@ async function initializeConfig() {
         process.exit(1);
     }
 
-    let credentialsJson;
-    if (process.env.GOOGLE_CREDENTIALS_JSON) {
-        try {
-            credentialsJson = JSON.parse(process.env.GOOGLE_CREDENTIALS_JSON);
-        } catch (e) {
-            console.error("Failed to parse GOOGLE_CREDENTIALS_JSON. Falling back to ADC if available.", e);
-            // If parsing fails, credentialsJson remains undefined, and the client will attempt ADC
-        }
-    }
-
     try {
         gsmClient = new GoogleSecretManager({
             projectId: projectId,
-            credentials: credentialsJson, 
         });
     } catch (error) {
         console.error('FATAL ERROR: Could not initialize GoogleSecretManager:', error);
@@ -79,14 +68,17 @@ async function initializeConfig() {
         appConfig.hmacKey = hmacKey;
         console.log(`HMAC key '${HMAC_SECRET_NAME}' loaded successfully.`);
 
-    } catch (error: any) { // Explicitly type error
-        // Catch potential errors from getSecret if it's not a SecretNotFoundError (already handled by returning null)
-        // or other unexpected errors during the HMAC key logic.
-        if (error instanceof GoogleCloudSecretManagerApiError) {
-            console.error('FATAL ERROR during HMAC key retrieval from GSM:', error.message, error.originalError || '');
-        } else {
-            console.error('FATAL ERROR during configuration initialization (HMAC key setup):', error);
+    } catch (error: any) {
+        // Generic error handling for HMAC key retrieval
+        let errorMessage = 'FATAL ERROR during HMAC key retrieval from GSM.';
+        if (error && typeof error === 'object' && 'message' in error) {
+            errorMessage += ` Message: ${error.message}`;
         }
+        // Attempt to log original error if available, common in wrapped errors
+        if (error && typeof error === 'object' && 'originalError' in error && error.originalError) {
+            errorMessage += ` Original Error: ${error.originalError}`;
+        }
+        console.error(errorMessage, error); // Log the full error object for more details
         process.exit(1); 
     }
 }
