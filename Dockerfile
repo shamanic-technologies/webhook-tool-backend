@@ -2,7 +2,7 @@ FROM node:18-slim AS base
 WORKDIR /app
 COPY package.json pnpm-lock.yaml ./
 RUN npm install -g pnpm
-RUN pnpm install --no-frozen-lockfile
+RUN pnpm install --no-frozen-lockfile --config.useWorkspacePackageJson=false
 
 FROM base AS build
 COPY . .
