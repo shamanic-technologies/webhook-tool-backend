@@ -14,7 +14,6 @@ COPY --from=build /app/dist ./dist
 COPY --from=base /app/node_modules ./node_modules
 COPY package.json ./
 COPY migrations ./migrations
-COPY service-account-key.json ./service-account-key.json
 
 ENV NODE_ENV=production
 EXPOSE 3000
