@@ -24,9 +24,9 @@ RUN npm install -g pnpm
 
 COPY --from=build /app/dist ./dist
 COPY --from=base /app/node_modules ./node_modules
-COPY --from=base /app/package.json ./ # For pnpm to find scripts
-COPY --from=base /app/pnpm-lock.yaml ./ # pnpm might need this too
-COPY --from=build /app/migrations ./migrations
+COPY --from=base /app/package.json /app/package.json
+COPY --from=base /app/pnpm-lock.yaml /app/pnpm-lock.yaml
+COPY --from=build /app/migrations /app/migrations
 
 # Run database migrations
 RUN pnpm migrate:up
