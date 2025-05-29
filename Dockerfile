@@ -12,6 +12,8 @@ RUN pnpm install --frozen-lockfile # Use frozen lockfile for reproducibility
 FROM base AS build
 # node_modules are already correctly installed in the base stage
 COPY . .
+RUN ls -la /app
+RUN ls -la /app/migrations
 RUN pnpm build
 
 FROM node:18-slim AS production
