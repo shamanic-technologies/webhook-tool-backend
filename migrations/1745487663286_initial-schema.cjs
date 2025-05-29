@@ -1,7 +1,8 @@
 /* eslint-disable @typescript-eslint/naming-convention */
-import type { MigrationBuilder, ColumnDefinitions } from 'node-pg-migrate';
+// @ts-check
 
-export const shorthands: ColumnDefinitions | undefined = undefined;
+/** @type {import('node-pg-migrate').ColumnDefinitions | undefined} */
+exports.shorthands = undefined;
 
 // SQL function to update updated_at column
 const UPDATE_UPDATED_AT_FN = `
@@ -15,17 +16,20 @@ $$ language 'plpgsql';
 `;
 
 // Trigger template
-const CREATE_UPDATE_TRIGGER = (tableName: string) => `
+const CREATE_UPDATE_TRIGGER = (tableName) => `
 CREATE TRIGGER update_${tableName}_updated_at BEFORE UPDATE
 ON ${tableName} FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 `;
 
 // Drop trigger template
-const DROP_UPDATE_TRIGGER = (tableName: string) => `
+const DROP_UPDATE_TRIGGER = (tableName) => `
 DROP TRIGGER IF EXISTS update_${tableName}_updated_at ON ${tableName};
 `;
 
-export async function up(pgm: MigrationBuilder): Promise<void> {
+/**
+ * @param {import('node-pg-migrate').MigrationBuilder} pgm
+ */
+exports.up = async (pgm) => {
     // Extensions
     pgm.createExtension('uuid-ossp', { ifNotExists: true });
     pgm.createExtension('vector', { ifNotExists: true });
@@ -45,8 +49,8 @@ export async function up(pgm: MigrationBuilder): Promise<void> {
         webhook_provider_id: { type: 'varchar(100)', notNull: true },
         subscribed_event_id: { type: 'varchar(255)', notNull: true },
         required_secrets: { type: 'jsonb', notNull: true, default: '[]' },
-        user_identification_mapping: { type: 'jsonb', notNull: true, default: '{\}' },
-        event_payload_schema: { type: 'jsonb', notNull: true, default: '{\}' },
+        user_identification_mapping: { type: 'jsonb', notNull: true, default: '{}' },
+        event_payload_schema: { type: 'jsonb', notNull: true, default: '{}' },
         embedding: { type: 'vector(10)' }, // Adjust dimension as needed
         created_at: {
             type: 'timestamptz',
@@ -59,9 +63,6 @@ export async function up(pgm: MigrationBuilder): Promise<void> {
             default: pgm.func('current_timestamp'),
         },
     });
-    // Optional: Add vector index later once you have data and know access patterns
-    // pgm.addIndex('webhooks', 'embedding', { method: 'hnsw', /* options */ }); 
-    // pgm.addIndex('webhooks', 'embedding', { method: 'ivfflat', /* options */ });
     pgm.sql(CREATE_UPDATE_TRIGGER('webhooks'));
 
     // user_webhooks table
@@ -76,8 +77,6 @@ export async function up(pgm: MigrationBuilder): Promise<void> {
         status: {
             type: 'varchar(50)',
             notNull: true,
-            // Optional: Add check constraint if your PG version supports it easily
-            // check: "status IN ('active', 'pending', 'inactive')",
         },
         created_at: {
             type: 'timestamptz',
@@ -90,7 +89,6 @@ export async function up(pgm: MigrationBuilder): Promise<void> {
             default: pgm.func('current_timestamp'),
         },
     });
-    // Composite primary key
     pgm.addConstraint('user_webhooks', 'user_webhooks_pkey', {
         primaryKey: ['webhook_id', 'client_user_id'],
     });
@@ -108,11 +106,9 @@ export async function up(pgm: MigrationBuilder): Promise<void> {
             default: pgm.func('current_timestamp'),
         },
     });
-    // Composite primary key
     pgm.addConstraint('webhook_agent_links', 'webhook_agent_links_pkey', {
         primaryKey: ['webhook_id', 'client_user_id', 'agent_id'],
     });
-    // Foreign key constraint to user_webhooks
     pgm.addConstraint('webhook_agent_links', 'webhook_agent_links_fk_user_webhook', {
         foreignKeys: {
             columns: ['webhook_id', 'client_user_id'],
@@ -121,25 +117,21 @@ export async function up(pgm: MigrationBuilder): Promise<void> {
         },
     });
     pgm.addIndex('webhook_agent_links', 'agent_id');
-    // No updated_at trigger needed typically
-}
+};
 
-export async function down(pgm: MigrationBuilder): Promise<void> {
-    // Drop tables in reverse order of creation, handling dependencies
+/**
+ * @param {import('node-pg-migrate').MigrationBuilder} pgm
+ */
+exports.down = async (pgm) => {
     pgm.dropConstraint('webhook_agent_links', 'webhook_agent_links_fk_user_webhook');
     pgm.dropConstraint('webhook_agent_links', 'webhook_agent_links_pkey');
     pgm.dropTable('webhook_agent_links');
 
     pgm.dropConstraint('user_webhooks', 'user_webhooks_pkey');
-    pgm.dropTable('user_webhooks'); // Drops indexes automatically
+    pgm.dropTable('user_webhooks'); 
     
-    pgm.dropTable('webhooks'); // Drops indexes and trigger automatically?
-    // Explicitly drop triggers and function if needed
+    pgm.dropTable('webhooks'); 
     pgm.sql(DROP_UPDATE_TRIGGER('webhooks'));
     pgm.sql(DROP_UPDATE_TRIGGER('user_webhooks'));
     pgm.sql('DROP FUNCTION IF EXISTS update_updated_at_column();');
-
-    // Optional: Drop extensions if they are ONLY used by this schema
-    // pgm.dropExtension('vector', { ifExists: true });
-    // pgm.dropExtension('uuid-ossp', { ifExists: true });
-}
+}; 

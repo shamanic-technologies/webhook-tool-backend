@@ -22,6 +22,9 @@ COPY --from=base /app/node_modules ./node_modules
 COPY --from=base /app/package.json ./
 COPY migrations ./migrations
 
+# Run database migrations
+RUN pnpm migrate:up
+
 # service-account-key.json and GOOGLE_APPLICATION_CREDENTIALS will be handled by Railway
 
 ENV NODE_ENV=production

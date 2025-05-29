@@ -1,20 +1,24 @@
 /* eslint-disable @typescript-eslint/naming-convention */
-import type { MigrationBuilder, ColumnDefinitions } from 'node-pg-migrate';
+// @ts-check
 
-export const shorthands: ColumnDefinitions | undefined = undefined;
+/** @type {import('node-pg-migrate').ColumnDefinitions | undefined} */
+exports.shorthands = undefined;
 
 // Function to get the update trigger SQL
-const CREATE_UPDATE_TRIGGER = (tableName: string) => `
+const CREATE_UPDATE_TRIGGER = (tableName) => `
 CREATE TRIGGER update_${tableName}_updated_at BEFORE UPDATE
 ON ${tableName} FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 `;
 
 // Function to get the drop trigger SQL
-const DROP_UPDATE_TRIGGER = (tableName: string) => `
+const DROP_UPDATE_TRIGGER = (tableName) => `
 DROP TRIGGER IF EXISTS update_${tableName}_updated_at ON ${tableName};
 `;
 
-export async function up(pgm: MigrationBuilder): Promise<void> {
+/**
+ * @param {import('node-pg-migrate').MigrationBuilder} pgm
+ */
+exports.up = async (pgm) => {
     // --- Drop columns ---
     // Drop columns from 'webhooks' table
     try {
@@ -99,9 +103,12 @@ export async function up(pgm: MigrationBuilder): Promise<void> {
 
     // Add updated_at trigger
     await pgm.sql(CREATE_UPDATE_TRIGGER('webhook_events'));
-}
+};
 
-export async function down(pgm: MigrationBuilder): Promise<void> {
+/**
+ * @param {import('node-pg-migrate').MigrationBuilder} pgm
+ */
+exports.down = async (pgm) => {
     // --- Revert 'webhook_events' table creation ---
     await pgm.sql(DROP_UPDATE_TRIGGER('webhook_events'));
     await pgm.dropConstraint('webhook_events', 'webhook_events_fk_user_webhook');
@@ -120,4 +127,4 @@ export async function down(pgm: MigrationBuilder): Promise<void> {
         client_user_identification_mapping: { type: 'jsonb', notNull: true, default: '{}' },
         event_payload_schema: { type: 'jsonb', notNull: true, default: '{}' },
     });
-}
+}; 

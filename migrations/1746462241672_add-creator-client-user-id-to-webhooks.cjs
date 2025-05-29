@@ -1,12 +1,13 @@
 /* eslint-disable @typescript-eslint/naming-convention */
+// @ts-check
 
 /** @type {import('node-pg-migrate').ColumnDefinitions | undefined} */
-export const shorthands = undefined;
+exports.shorthands = undefined;
 
 /**
  * @param {import("node-pg-migrate/dist/types").MigrationBuilder} pgm
  */
-export const up = (pgm) => {
+exports.up = (pgm) => {
     pgm.addColumn('webhooks', {
         creator_client_user_id: {
             type: 'varchar(255)',
@@ -18,6 +19,6 @@ export const up = (pgm) => {
 /**
  * @param {import("node-pg-migrate/dist/types").MigrationBuilder} pgm
  */
-export const down = (pgm) => {
+exports.down = (pgm) => {
     pgm.dropColumn('webhooks', 'creator_client_user_id');
-};
+}; 
