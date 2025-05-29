@@ -4,8 +4,8 @@ WORKDIR /app
 # Install pnpm first, then copy files (mirroring api-tool-backend)
 RUN npm install -g pnpm
 
-COPY package.json ./
-COPY pnpm-lock.yaml ./ # Ensure lockfile is copied
+COPY package.json /app/package.json
+COPY pnpm-lock.yaml /app/pnpm-lock.yaml # Ensure lockfile is copied
 
 RUN pnpm install --frozen-lockfile # Use frozen lockfile for reproducibility
 
