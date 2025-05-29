@@ -1,8 +1,7 @@
 FROM node:18-slim AS base
 WORKDIR /app
 
-COPY package.json ./
-COPY pnpm-lock.yaml ./ # Ensure lockfile is copied
+COPY package.json pnpm-lock.yaml ./ # Ensure lockfile is copied
 
 RUN npm install -g pnpm
 RUN pnpm install --frozen-lockfile # Use frozen lockfile for reproducibility
