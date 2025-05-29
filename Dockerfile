@@ -1,9 +1,12 @@
 FROM node:18-slim AS base
 WORKDIR /app
 
-COPY package.json pnpm-lock.yaml ./ # Ensure lockfile is copied
-
+# Install pnpm first, then copy files (mirroring api-tool-backend)
 RUN npm install -g pnpm
+
+COPY package.json ./
+COPY pnpm-lock.yaml ./ # Ensure lockfile is copied
+
 RUN pnpm install --frozen-lockfile # Use frozen lockfile for reproducibility
 
 FROM base AS build
