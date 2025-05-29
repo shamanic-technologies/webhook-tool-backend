@@ -1,14 +1,11 @@
 FROM node:18-slim AS base
 WORKDIR /app
 
-# Copy package.json and pnpm-lock.yaml (if you intend to commit it after a successful local install without overrides)
-# If pnpm-lock.yaml is not present or might be stale, just copy package.json
 COPY package.json ./
-# COPY pnpm-lock.yaml ./
+COPY pnpm-lock.yaml ./ # Ensure lockfile is copied
 
 RUN npm install -g pnpm
-# Install dependencies. This will generate a pnpm-lock.yaml if not present.
-RUN pnpm install --no-frozen-lockfile
+RUN pnpm install --frozen-lockfile # Use frozen lockfile for reproducibility
 
 FROM base AS build
 # node_modules are already correctly installed in the base stage
@@ -17,15 +14,18 @@ RUN pnpm build
 
 FROM node:18-slim AS production
 WORKDIR /app
+
+# Install pnpm in the production stage as well, so it can run migrate:up script
+RUN npm install -g pnpm
+
 COPY --from=build /app/dist ./dist
 COPY --from=base /app/node_modules ./node_modules
-COPY --from=base /app/package.json ./
-COPY migrations ./migrations
+COPY --from=base /app/package.json ./ # For pnpm to find scripts
+COPY --from=base /app/pnpm-lock.yaml ./ # pnpm might need this too
+COPY migrations ./migrations # Assumes migrations are from the build context not the base image
 
 # Run database migrations
 RUN pnpm migrate:up
-
-# service-account-key.json and GOOGLE_APPLICATION_CREDENTIALS will be handled by Railway
 
 ENV NODE_ENV=production
 EXPOSE 3000
