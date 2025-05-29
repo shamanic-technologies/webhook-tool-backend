@@ -29,9 +29,9 @@ COPY --from=base /app/pnpm-lock.yaml /app/pnpm-lock.yaml
 COPY --from=build /app/migrations /app/migrations
 
 # Run database migrations
-RUN pnpm migrate:up
+# RUN pnpm migrate:up # Moved to CMD
 
 ENV NODE_ENV=production
 EXPOSE 3000
 
-CMD ["node", "dist/index.js"]
+CMD ["sh", "-c", "pnpm migrate:up && node dist/index.js"]
