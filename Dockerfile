@@ -22,7 +22,7 @@ COPY --from=build /app/dist ./dist
 COPY --from=base /app/node_modules ./node_modules
 COPY --from=base /app/package.json ./ # For pnpm to find scripts
 COPY --from=base /app/pnpm-lock.yaml ./ # pnpm might need this too
-COPY migrations ./migrations # Assumes migrations are from the build context not the base image
+COPY --from=build /app/migrations ./migrations # Copy migrations from the build stage
 
 # Run database migrations
 RUN pnpm migrate:up
