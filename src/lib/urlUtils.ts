@@ -16,7 +16,8 @@ import { findUserWebhook } from "../services/userWebhookLinkService.js";
  */
 export async function constructWebhookTargetUrl(
   webhook: Webhook,
-  clientUserId: string
+  clientUserId: string,
+  clientOrganizationId: string
 ): Promise<string> {
   const baseWebhookUrl = process.env.WEBHOOK_URL;
   if (!baseWebhookUrl) {
@@ -24,13 +25,13 @@ export async function constructWebhookTargetUrl(
       "WEBHOOK_URL environment variable is not set. Cannot construct target URL.",
     );
   }
-  const userWebhook = await findUserWebhook(webhook.id, clientUserId);
+  const userWebhook = await findUserWebhook(webhook.id, clientUserId, clientOrganizationId);
   if (!userWebhook || !userWebhook.webhookSecret) {
     // If the user webhook link doesn't exist or is missing a secret (which shouldn't happen for an active link),
     // we cannot construct a valid target URL.
     throw new Error(
-      `Failed to construct target URL: UserWebhook link for webhook ID ${webhook.id} and client user ID ${clientUserId} not found or is missing a secret.`
+      `Failed to construct target URL: UserWebhook link for webhook ID ${webhook.id} and client user ID ${clientUserId} and client organization ID ${clientOrganizationId} not found or is missing a secret.`
     );
   }
-  return `${baseWebhookUrl}/api/v1/webhooks/incoming/${webhook.webhookProviderId}/${webhook.subscribedEventId}/${clientUserId}?secret=${userWebhook.webhookSecret}`;
+  return `${baseWebhookUrl}/api/v1/webhooks/incoming/${webhook.webhookProviderId}/${webhook.subscribedEventId}/${clientUserId}/${clientOrganizationId}?secret=${userWebhook.webhookSecret}`;
 } 

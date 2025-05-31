@@ -20,10 +20,10 @@ import { AuthenticatedRequest } from '../middleware/auth.js';
 export const getUserCreatedWebhooksController = async (req: Request, res: Response<ServiceResponse<SearchWebhookResult>>, next: NextFunction) => {
     try {
         // clientUserId is guaranteed to be a string by authMiddleware.
-        const clientUserId = (req as AuthenticatedRequest).serviceCredentials!.clientUserId!;
-
+        const clientUserId = (req as AuthenticatedRequest).humanInternalCredentials!.clientUserId!;
+        const clientOrganizationId = (req as AuthenticatedRequest).humanInternalCredentials!.clientOrganizationId!;
         // Call the updated service function which now returns fully populated Webhook[]
-        const webhooksApp = await getUserCreatedWebhooksService(clientUserId); 
+        const webhooksApp = await getUserCreatedWebhooksService(clientUserId, clientOrganizationId); 
         
         // Prepare the success response
         const response: SuccessResponse<SearchWebhookResult> = { success: true, data: webhooksApp };

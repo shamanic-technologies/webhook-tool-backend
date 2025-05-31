@@ -37,7 +37,8 @@ export const getWebhookEventsController = async (
         }
 
         // Extract clientUserId from the authenticated request context
-        const clientUserId = authReq.serviceCredentials?.clientUserId;
+        const clientUserId = authReq.humanInternalCredentials?.clientUserId;
+
         if (!clientUserId) {
             console.error('Client User ID not found in serviceCredentials');
             // This should ideally not happen if authMiddleware is working correctly
@@ -45,16 +46,28 @@ export const getWebhookEventsController = async (
                 success: false,
                 error: 'Unauthorized',
                 details: 'Authentication context missing required client user ID in serviceCredentials.',
-                hint: 'Ensure the request is properly authenticated and includes the required headers.'
+                hint: 'Contact support, this should not happen.'
+            };
+            res.status(401).json(errorResponse);
+            return;
+        }
+        const clientOrganizationId = authReq.humanInternalCredentials?.clientOrganizationId;
+        if (!clientOrganizationId) {
+            console.error('Client Organization ID not found in serviceCredentials');
+            const errorResponse: ErrorResponse = {
+                success: false,
+                error: 'Unauthorized',
+                details: 'Authentication context missing required client organization ID in serviceCredentials.',
+                hint: 'Contact support, this should not happen.'
             };
             res.status(401).json(errorResponse);
             return;
         }
 
         // Call the service function to fetch events
-        console.log(`Fetching events for webhookId: ${webhookId}, clientUserId: ${clientUserId}`);
+        console.log(`Fetching events for webhookId: ${webhookId}, clientUserId: ${clientUserId}, clientOrganizationId: ${clientOrganizationId}`);
         // Pass validated clientUserId (which is guaranteed to be string here)
-        const serviceResponse = await getWebhookEventsService(webhookId, clientUserId);
+        const serviceResponse = await getWebhookEventsService(webhookId, clientUserId, clientOrganizationId);
 
         // Send the response back to the client
         // Handle potential error responses from the service

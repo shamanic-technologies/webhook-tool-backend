@@ -16,24 +16,25 @@ import { WebhookEventRecord } from '../types/db.js'; // Import the DB record typ
  * 
  * @param {string} webhookId - The ID of the webhook.
  * @param {string} clientUserId - The ID of the client user making the request.
+ * @param {string} clientOrganizationId - The ID of the client organization.
  * @returns {Promise<ServiceResponse<WebhookEvent[]>>} - A promise resolving to a service response containing the list of events or an error.
  */
 export const getWebhookEventsService = async (
     webhookId: string, 
-    clientUserId: string
+    clientUserId: string,
+    clientOrganizationId: string
 ): Promise<ServiceResponse<WebhookEvent[]>> => {
-    console.log(`Service: Fetching events for webhookId: ${webhookId}, clientUserId: ${clientUserId}`);
 
     const sql = `
         SELECT * 
         FROM webhook_events 
-        WHERE webhook_id = $1 AND client_user_id = $2
+        WHERE webhook_id = $1 AND client_user_id = $2 AND client_organization_id = $3
         ORDER BY created_at DESC; -- Order by most recent first
     `;
 
     try {
         // Execute the query using the db helper
-        const result = await query<WebhookEventRecord>(sql, [webhookId, clientUserId]);
+        const result = await query<WebhookEventRecord>(sql, [webhookId, clientUserId, clientOrganizationId]);
         
         // Map the database records to the API response type
         const events: WebhookEvent[] = result.rows.map(mapWebhookEventRecordToWebhookEvent);
@@ -83,6 +84,7 @@ const mapWebhookEventRecordToWebhookEvent = (record: WebhookEventRecord): Webhoo
         eventId: record.id, // Map id to eventId
         webhookId: record.webhook_id,
         clientUserId: record.client_user_id,
+        clientOrganizationId: record.client_organization_id,
         platformUserId: record.platform_user_id,
         createdAt: record.created_at, // Assuming created_at represents received time
         updatedAt: record.updated_at, // Or map based on a specific status/timestamp if available

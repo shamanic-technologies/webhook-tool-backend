@@ -21,7 +21,6 @@ import { validate as uuidValidate } from 'uuid';
  * Controller for POST /:webhookId/link-agent - Link a webhook to an agent.
  */
 export const linkAgentController = async (req: Request, res: Response<ServiceResponse<AgentUserWebhook>>, next: NextFunction) => {
-    console.log('>>> Entering linkAgentController');
     try {
         const paramsValidation = WebhookIdParamsSchema.safeParse(req.params);
         if (!paramsValidation.success) {
@@ -44,28 +43,37 @@ export const linkAgentController = async (req: Request, res: Response<ServiceRes
             });
         }
 
-        const clientUserId = (req as AuthenticatedRequest).serviceCredentials?.clientUserId;
+        const clientUserId = (req as AuthenticatedRequest).humanInternalCredentials?.clientUserId;
         if (!clientUserId) {
+            console.error('Client User ID not found in serviceCredentials');
             return res.status(401).json({ success: false, error: 'Unauthorized', details: 'Client User ID header is required.' });
         }
+        const clientOrganizationId = (req as AuthenticatedRequest).humanInternalCredentials?.clientOrganizationId;
+        if (!clientOrganizationId) {
+            console.error('Client Organization ID not found in serviceCredentials');
+            return res.status(401).json({ success: false, error: 'Unauthorized', details: 'Client Organization ID header is required.' });
+        }
         // Also get platformUserId
-        const platformUserId = (req as AuthenticatedRequest).serviceCredentials?.platformUserId;
+        const platformUserId = (req as AuthenticatedRequest).humanInternalCredentials?.platformUserId;
         if (!platformUserId) {
+            console.error('Platform User ID not found in serviceCredentials');
             // Add check for platformUserId as it's needed for the service
              return res.status(401).json({ success: false, error: 'Unauthorized', details: 'Platform User ID header is required.' });
         }
 
         // Ensure user webhook link exists and is active first
-        const userWebhookRecord = await findUserWebhookService(webhookId, clientUserId);
+        const userWebhookRecord = await findUserWebhookService(webhookId, clientUserId, clientOrganizationId);
         if (!userWebhookRecord) {
+            console.error(`[Controller Error] Link Agent: User is not linked to webhook ${webhookId}`);
              return res.status(404).json({ success: false, error: 'Not Found', details: 'User is not linked to this webhook.' });
         }
         if (userWebhookRecord.status !== WebhookStatus.ACTIVE) {
+            console.error(`[Controller Error] Link Agent: Webhook link for user ${clientUserId} is not active.`);
              return res.status(400).json({ success: false, error: 'Bad Request', details: 'Webhook link for user is not active. Cannot link agent.' });
         }
 
         // Pass platformUserId to the service function
-        const agentLink = await linkAgentToWebhookService(webhookId, clientUserId, platformUserId, agentId);
+        const agentLink = await linkAgentToWebhookService(webhookId, clientUserId, clientOrganizationId, platformUserId, agentId);
         const response: SuccessResponse<AgentUserWebhook> = {
             success: true,
             data: agentLink,
@@ -77,7 +85,6 @@ export const linkAgentController = async (req: Request, res: Response<ServiceRes
             - The subscribed event has not been properly turned on for the specific webhook in the provider dashboard
             - An internal error: in that case contact the support`
         };
-        console.log('DEBUG: Link Agent Response:', JSON.stringify(response));
         res.status(201).json(response);
 
     } catch (error) {

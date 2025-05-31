@@ -20,10 +20,10 @@ import { AuthenticatedRequest } from '../middleware/auth.js';
  * Controller for POST /search - Search for webhooks.
  */
 export const searchWebhooksController = async (req: Request, res: Response<ServiceResponse<SearchWebhookResult>>, next: NextFunction) => {
-    console.log('>>> Entering searchWebhooksController');
     try {
         // clientUserId is guaranteed to be a string by authMiddleware after its checks.
-        const clientUserId = (req as AuthenticatedRequest).serviceCredentials!.clientUserId!;
+        const clientUserId = (req as AuthenticatedRequest).humanInternalCredentials!.clientUserId!;
+        const clientOrganizationId = (req as AuthenticatedRequest).humanInternalCredentials!.clientOrganizationId!;
 
         const validationResult = SearchWebhookSchema.safeParse(req.body);
         if (!validationResult.success) {
@@ -38,7 +38,7 @@ export const searchWebhooksController = async (req: Request, res: Response<Servi
         // If searchQuery is empty or only whitespace, queryVector remains null
 
         // searchWebhooksService will need to handle a null queryVector
-        const webhooksApp = await searchWebhooksService(clientUserId, queryVector, limit);
+        const webhooksApp = await searchWebhooksService(clientUserId, clientOrganizationId, queryVector, limit);
         const response: SuccessResponse<SearchWebhookResult> = {
             success: true,
             data: webhooksApp,

@@ -29,8 +29,8 @@ export const createWebhookController = async (
   console.log(">>> Entering createWebhookController");
   try {
     // clientUserId is guaranteed to be a string by authMiddleware.
-    const clientUserId = (req as AuthenticatedRequest).serviceCredentials!.clientUserId!;
-
+    const clientUserId = (req as AuthenticatedRequest).humanInternalCredentials!.clientUserId!;
+    const clientOrganizationId = (req as AuthenticatedRequest).humanInternalCredentials!.clientOrganizationId!;
     const validationResult = CreateWebhookSchema.safeParse(req.body);
     if (!validationResult.success) {
       return res
@@ -44,7 +44,8 @@ export const createWebhookController = async (
         .webhookProviderId as UtilityProvider,
       conversationIdIdentificationMapping:
         validationResult.data.conversationIdIdentificationMapping,
-      creatorClientUserId: clientUserId
+      creatorClientUserId: clientUserId,
+      creatorClientOrganizationId: clientOrganizationId,
     };
 
 
@@ -55,6 +56,7 @@ export const createWebhookController = async (
       webhookData,
       embedding,
       clientUserId,
+      clientOrganizationId,
     );
     const response: SuccessResponse<Webhook> = {
       success: true,

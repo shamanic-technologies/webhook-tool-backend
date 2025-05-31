@@ -14,7 +14,7 @@ import {
     ServiceResponse,
     ConversationId,
     PlatformUserId,
-    ClientUserApiServiceCredentials,
+    InternalCredentials,
 } from '@agent-base/types';
 // @ts-ignore
 import { Message } from 'ai'; // Vercel AI SDK Message type
@@ -34,6 +34,7 @@ interface LogWebhookEventParams {
     providerId: WebhookProviderId;
     subscribedEventId: string;
     clientUserId: string;
+    clientOrganizationId: string;
     webhookSecret: string;
     conversationId: string;
     webhookId: string;
@@ -48,7 +49,7 @@ interface LogWebhookEventParams {
  */
 const _logWebhookEvent = async (params: LogWebhookEventParams): Promise<void> => {
     const { 
-        payload, providerId, subscribedEventId, clientUserId, 
+        payload, providerId, subscribedEventId, clientUserId, clientOrganizationId,
         webhookSecret, conversationId, webhookId, agentId, 
         platformUserId // Now expects a string
     } = params;
@@ -56,11 +57,11 @@ const _logWebhookEvent = async (params: LogWebhookEventParams): Promise<void> =>
     try {
         const insertSql = `
             INSERT INTO webhook_events (
-                id, payload, provider_id, subscribed_event_id, client_user_id, 
+                id, payload, provider_id, subscribed_event_id, client_user_id, client_organization_id,
                 webhook_secret, conversation_id, webhook_id, agent_id, platform_user_id,
                 created_at, updated_at
             )
-            VALUES (uuid_generate_v4(), $1, $2, $3, $4, $5, $6, $7, $8, $9, NOW(), NOW())
+            VALUES (uuid_generate_v4(), $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW(), NOW())
             RETURNING id; -- Return the ID of the inserted event
         `;
         // Note: Storing webhook_secret directly is a security risk.
@@ -69,6 +70,7 @@ const _logWebhookEvent = async (params: LogWebhookEventParams): Promise<void> =>
             providerId,
             subscribedEventId,
             clientUserId,
+            clientOrganizationId,
             webhookSecret, // Storing the actual secret!
             conversationId,
             webhookId,
@@ -94,6 +96,7 @@ const _logWebhookEvent = async (params: LogWebhookEventParams): Promise<void> =>
 interface ProcessWebhookParams {
     platformUserId: string;
     clientUserId: string; // Use string for clientUserId
+    clientOrganizationId: string;
     agentId: string;
     conversationId: string;
     webhookProviderId: WebhookProviderId;
@@ -115,13 +118,14 @@ export const processResolvedWebhook = async (params: ProcessWebhookParams): Prom
     const {
         platformUserId,
         clientUserId,
+        clientOrganizationId,
         agentId,
         conversationId,
-        webhookProviderId,
+        webhookProviderId, 
         subscribedEventId,
         payload,
-        webhookId,      // Destructure new param
-        webhookSecret   // Destructure new param
+        webhookId,
+        webhookSecret
     } = params;
 
     console.log(`[Webhook Processor] Starting async processing for ${webhookProviderId}/${subscribedEventId}, User: ${platformUserId}, Agent: ${agentId}, Conversation: ${conversationId}`);
@@ -133,11 +137,12 @@ export const processResolvedWebhook = async (params: ProcessWebhookParams): Prom
         providerId: webhookProviderId,
         subscribedEventId,
         clientUserId,
+        clientOrganizationId,
         webhookSecret,
         conversationId,
-        webhookId,
+        webhookId, 
         agentId,
-        platformUserId // Extract the string ID
+        platformUserId
     });
 
     try {
@@ -151,9 +156,10 @@ export const processResolvedWebhook = async (params: ProcessWebhookParams): Prom
         }
         // --- 2. Prepare Internal Credentials ---
 
-        const clientUserApiServiceCredentials: ClientUserApiServiceCredentials = {
+        const internalCredentials: InternalCredentials = {
             platformApiKey,
-            clientUserId
+            clientUserId,
+            clientOrganizationId
         };
 
         // --- 3. Get or Create Conversation ---
@@ -166,7 +172,7 @@ export const processResolvedWebhook = async (params: ProcessWebhookParams): Prom
 
         const getOrCreateConversationResponse : ServiceResponse<ConversationId> = await getOrCreateConversationClientUserApiService(
             conversationInput,
-            clientUserApiServiceCredentials
+            internalCredentials
         );
 
         if (!getOrCreateConversationResponse.success) {
@@ -192,7 +198,7 @@ export const processResolvedWebhook = async (params: ProcessWebhookParams): Prom
         const runResponse = await triggerAgentRunClientUserApiService(
             conversationId,
             webhookMessage,
-            clientUserApiServiceCredentials
+            internalCredentials
         );
 
         if (!runResponse.success) {

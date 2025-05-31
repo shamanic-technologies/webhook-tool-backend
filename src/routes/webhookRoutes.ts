@@ -19,7 +19,7 @@ const router: Router = Router();
 
 // Define public routes FIRST
 // Route for internal gateway service to resolve incoming webhooks - NO AUTH
-router.post('/incoming/:webhookProviderId/:subscribedEventId/:clientUserId', incomingWebhookController);
+router.post('/incoming/:webhookProviderId/:subscribedEventId/:clientUserId/:clientOrganizationId', incomingWebhookController);
 
 // Routes requiring standard user/service authentication
 const authenticatedRouter = Router();

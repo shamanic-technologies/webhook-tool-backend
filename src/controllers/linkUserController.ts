@@ -37,6 +37,7 @@ import { constructWebhookTargetUrl } from "../lib/urlUtils.js";
 interface LinkUserValidationResult {
   webhookId: string;
   clientUserId: string;
+  clientOrganizationId: string;
   platformUserId: string;
   errorResponse?: ErrorResponse;
 }
@@ -58,7 +59,7 @@ function _validateLinkUserRequest(
   }
   const { webhookId } = paramsValidation.data;
 
-  const clientUserId = (req as AuthenticatedRequest).serviceCredentials?.clientUserId;
+  const clientUserId = (req as AuthenticatedRequest).humanInternalCredentials?.clientUserId;
   if (!clientUserId) {
     return {
       errorResponse: {
@@ -68,7 +69,17 @@ function _validateLinkUserRequest(
       },
     } as LinkUserValidationResult;
   }
-  const platformUserId = (req as AuthenticatedRequest).serviceCredentials?.platformUserId;
+  const clientOrganizationId = (req as AuthenticatedRequest).humanInternalCredentials?.clientOrganizationId;
+  if (!clientOrganizationId) {
+    return {
+      errorResponse: {
+        success: false,
+        error: "Unauthorized",
+        details: "Client Organization ID header is required.",
+      },
+    } as LinkUserValidationResult;
+  }
+  const platformUserId = (req as AuthenticatedRequest).humanInternalCredentials?.platformUserId;
   if (!platformUserId) {
     return {
       errorResponse: {
@@ -78,7 +89,7 @@ function _validateLinkUserRequest(
       },
     } as LinkUserValidationResult;
   }
-  return { webhookId, clientUserId, platformUserId };
+  return { webhookId, clientUserId, clientOrganizationId, platformUserId };
 }
 
 // --- Helper: Check Setup Status ---
@@ -97,12 +108,14 @@ interface SetupStatusResult {
 async function _checkWebhookSetupStatus(
   webhook: Webhook, // Webhook definition
   clientUserId: string,
+  clientOrganizationId: string,
 ): Promise<SetupStatusResult> {
   const missingConfirmations: UtilityActionConfirmation[] = [];
 
   const webhookUrlToInput = await constructWebhookTargetUrl(
     webhook,
     clientUserId,
+    clientOrganizationId,
   );
   
   // Use the specific enum type for confirmation actions
@@ -115,8 +128,9 @@ async function _checkWebhookSetupStatus(
   const applicationSecretId = generateSecretManagerId(
     UserType.Client,
     clientUserId,
+    clientOrganizationId,
     webhook.webhookProviderId,
-    confirmationActionType as UtilityInputSecret, // Cast to UtilityInputSecret if they are compatible string types
+    confirmationActionType,
     webhook.subscribedEventId, 
   );
 
@@ -168,13 +182,12 @@ export const linkUserController = async (
   res: Response<ServiceResponse<UserWebhook | SetupNeeded>>,
   next: NextFunction,
 ) => {
-  console.log(`>>> Entering linkUserController...`);
   try {
     const validation = _validateLinkUserRequest(req);
     if (validation.errorResponse) {
       return res.status(400).json(validation.errorResponse);
     }
-    const { webhookId, clientUserId, platformUserId } = validation;
+    const { webhookId, clientUserId, clientOrganizationId, platformUserId } = validation;
 
     const webhook = await getWebhookByIdService(webhookId);
     if (!webhook) {
@@ -188,6 +201,7 @@ export const linkUserController = async (
     let userWebhookLink = await findUserWebhookService(
       webhookId,
       clientUserId,
+      clientOrganizationId,
     );
     
     let isNewLink = false;
@@ -197,6 +211,7 @@ export const linkUserController = async (
       userWebhookLink = await createUserWebhookService(
         webhookId,
         clientUserId,
+        clientOrganizationId,
         platformUserId,
         WebhookStatus.UNSET, 
       );
@@ -204,7 +219,7 @@ export const linkUserController = async (
     
     const currentStatus = userWebhookLink.status;
 
-    const setupStatus = await _checkWebhookSetupStatus(webhook, clientUserId);
+    const setupStatus = await _checkWebhookSetupStatus(webhook, clientUserId, clientOrganizationId);
 
     if (setupStatus.isSetupNeeded) {
       let finalUserWebhookLink = userWebhookLink;
@@ -212,6 +227,7 @@ export const linkUserController = async (
         finalUserWebhookLink = await updateUserWebhookStatusService( 
           webhookId,
           clientUserId,
+          clientOrganizationId,
           WebhookStatus.UNSET,
         );
       }
@@ -227,6 +243,7 @@ export const linkUserController = async (
         finalUserWebhook = await updateUserWebhookStatusService(
           webhookId,
           clientUserId,
+          clientOrganizationId,
           WebhookStatus.ACTIVE,
         );
       }

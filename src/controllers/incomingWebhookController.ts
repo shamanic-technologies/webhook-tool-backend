@@ -29,6 +29,7 @@ interface IncomingWebhookParams {
     webhookProviderId: string;
     subscribedEventId: string;
     clientUserId: string;
+    clientOrganizationId: string;
 }
 
 interface IncomingWebhookQuery {
@@ -40,17 +41,17 @@ interface IncomingWebhookQuery {
 // And that this controller is the handler for it.
 export const incomingWebhookController = async (req: Request<IncomingWebhookParams, {}, any, IncomingWebhookQuery>, res: Response<ServiceResponse<string>>, next: NextFunction) => {
     try {
-        const { webhookProviderId, subscribedEventId, clientUserId } = req.params;
+        const { webhookProviderId, subscribedEventId, clientUserId, clientOrganizationId } = req.params;
         const { secret } = req.query;
         const payload = req.body;
 
         // Basic validation of inputs
-        if (!webhookProviderId || !subscribedEventId || !clientUserId || !secret) {
+        if (!webhookProviderId || !subscribedEventId || !clientUserId || !clientOrganizationId || !secret) {
             return res.status(400).json({
                 success: false,
                 error: 'Bad Request',
-                details: "Missing required parameters in URL path (webhookProviderId, subscribedEventId, clientUserId) or query (secret).",
-                hint: "Ensure the webhook URL is in the format /incoming/:webhookProviderId/:subscribedEventId/:clientUserId?secret=YOUR_SECRET"
+                details: "Missing required parameters in URL path (webhookProviderId, subscribedEventId, clientUserId, clientOrganizationId) or query (secret).",
+                hint: "Ensure the webhook URL is in the format /incoming/:webhookProviderId/:subscribedEventId/:clientUserId/:clientOrganizationId?secret=YOUR_SECRET"
             });
         }
 
@@ -120,7 +121,7 @@ export const incomingWebhookController = async (req: Request<IncomingWebhookPara
         }
         
         // 3. Find the linked agent for this user and webhook
-        const agentLink: AgentUserWebhook | null = await findAgentLink(userWebhook.webhookId, userWebhook.clientUserId);
+        const agentLink: AgentUserWebhook | null = await findAgentLink(userWebhook.webhookId, userWebhook.clientUserId, userWebhook.clientOrganizationId);
 
         if (!agentLink) {
             console.warn(`No agent link found for UserWebhook: ${userWebhook.webhookId}, ClientUser: ${userWebhook.clientUserId}`);
@@ -152,6 +153,7 @@ export const incomingWebhookController = async (req: Request<IncomingWebhookPara
         const processingParams = {
             platformUserId: userWebhook.platformUserId, // Construct PlatformUserId object
             clientUserId: userWebhook.clientUserId,   // Get from the validated userWebhook link
+            clientOrganizationId: userWebhook.clientOrganizationId,   // Get from the validated userWebhook link
             agentId: agentLink.agentId,             // Get from the validated agent link
             conversationId: conversationIdString, // Use the extracted string
             webhookProviderId: webhook.webhookProviderId, // Use validated provider ID

@@ -14,12 +14,13 @@ import { randomUUID } from 'crypto'; // Added for generating webhook_secret
  *
  * @param webhookId The ID of the webhook.
  * @param clientUserId The ID of the client user.
+ * @param clientOrganizationId The ID of the client organization.
  * @returns The UserWebhookRecord or null if not found.
  */
-export const findUserWebhook = async (webhookId: string, clientUserId: string): Promise<UserWebhook | null> => {
-    const sql = "SELECT * FROM user_webhooks WHERE webhook_id = $1 AND client_user_id = $2";
+export const findUserWebhook = async (webhookId: string, clientUserId: string, clientOrganizationId: string): Promise<UserWebhook | null> => {
+    const sql = "SELECT * FROM user_webhooks WHERE webhook_id = $1 AND client_user_id = $2 AND client_organization_id = $3";
     try {
-        const result = await query<UserWebhookRecord>(sql, [webhookId, clientUserId]);
+        const result = await query<UserWebhookRecord>(sql, [webhookId, clientUserId, clientOrganizationId]);
         return result.rows.length > 0 ? mapUserWebhookRecordToUserWebhook(result.rows[0]) : null;
     } catch (err) {
         console.error("Error finding user webhook link:", err);
@@ -39,6 +40,7 @@ export const findUserWebhook = async (webhookId: string, clientUserId: string): 
 export const createUserWebhook = async (
     webhookId: string, 
     clientUserId: string, 
+    clientOrganizationId: string,
     platformUserId: string,
     status: WebhookStatus,
 ): Promise<UserWebhook> => {
@@ -48,13 +50,14 @@ export const createUserWebhook = async (
         INSERT INTO user_webhooks (
             webhook_id, 
             client_user_id, 
+            client_organization_id,
             platform_user_id,
             status, 
             webhook_secret, -- Added webhook_secret
             created_at, 
             updated_at
         )
-        VALUES ($1, $2, $3, $4, $5, NOW(), NOW())
+        VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW())
         ON CONFLICT ON CONSTRAINT ${constraintName} 
         DO UPDATE SET 
             platform_user_id = EXCLUDED.platform_user_id, 
@@ -67,6 +70,7 @@ export const createUserWebhook = async (
         const result = await query<UserWebhookRecord>(sql, [
             webhookId, 
             clientUserId, 
+            clientOrganizationId,
             platformUserId,
             status, 
             newWebhookSecret // Pass the generated secret
@@ -87,6 +91,7 @@ export const createUserWebhook = async (
  *
  * @param webhookId The ID of the webhook.
  * @param clientUserId The ID of the client user.
+ * @param clientOrganizationId The ID of the client organization.
  * @param status The new status.
  * @returns The updated UserWebhook (including the existing webhook_secret).
  * @throws Error if the record doesn't exist or update fails.
@@ -94,6 +99,7 @@ export const createUserWebhook = async (
 export const updateUserWebhookStatus = async (
     webhookId: string, 
     clientUserId: string, 
+    clientOrganizationId: string,
     status: WebhookStatus 
 ): Promise<UserWebhook> => {
     const sql = `
@@ -103,13 +109,14 @@ export const updateUserWebhookStatus = async (
             -- webhook_secret is NOT modified here
             -- client_user_identification_hash is NOT modified here and is deprecated
             updated_at = NOW()
-        WHERE webhook_id = $1 AND client_user_id = $2
+        WHERE webhook_id = $1 AND client_user_id = $2 AND client_organization_id = $3
         RETURNING *;
     `;
     try {
         const result = await query<UserWebhookRecord>(sql, [
             webhookId, 
             clientUserId, 
+            clientOrganizationId,
             status 
         ]);
         if (result.rows.length === 0) {
@@ -139,6 +146,7 @@ export const mapUserWebhookRecordToUserWebhook = (record: UserWebhookRecord): Us
     return {
         webhookId: record.webhook_id,
         clientUserId: record.client_user_id,
+        clientOrganizationId: record.client_organization_id,
         platformUserId: record.platform_user_id,
         status: record.status,
         webhookSecret: record.webhook_secret,
@@ -153,6 +161,7 @@ export const mapUserWebhookRecordToUserWebhook = (record: UserWebhookRecord): Us
  * @param webhookProviderId The ID of the webhook provider.
  * @param subscribedEventId The ID of the subscribed event.
  * @param clientUserId The ID of the client user.
+ * @param clientOrganizationId The ID of the client organization.
  * @param secret The unique secret from the webhook URL.
  * @returns A Promise resolving to an object containing the UserWebhook and its Webhook (application type), or null if not found or not active.
  */

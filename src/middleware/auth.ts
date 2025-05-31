@@ -5,17 +5,18 @@
  * Attaches credentials to the request object for downstream handlers.
  */
 import { Request, Response, NextFunction } from 'express';
-import { ServiceCredentials, ErrorResponse } from '@agent-base/types';
+import { ErrorResponse, HumanInternalCredentials } from '@agent-base/types';
 
 // Define a custom request type that includes the credentials
 export interface AuthenticatedRequest extends Request {
-  serviceCredentials: ServiceCredentials;
+  humanInternalCredentials: HumanInternalCredentials;
 }
 
 // Constants for header names (consider making these configurable)
 const HEADER_PLATFORM_API_KEY = 'x-platform-api-key';
 const HEADER_PLATFORM_USER_ID = 'x-platform-user-id';
 const HEADER_CLIENT_USER_ID = 'x-client-user-id'; // Now required
+const HEADER_CLIENT_ORGANIZATION_ID = 'x-client-organization-id'; // Now required
 const HEADER_AGENT_ID = 'x-agent-id'; // Optional depending on endpoint needs
 
 /**
@@ -25,6 +26,7 @@ const HEADER_AGENT_ID = 'x-agent-id'; // Optional depending on endpoint needs
  * - `x-platform-api-key`: Required
  * - `x-platform-user-id`: Required
  * - `x-client-user-id`: Required
+ * - `x-client-organization-id`: Required
  * - `x-agent-id`: Optional
  *
  * If required headers are missing or invalid, sends a 401 Unauthorized response.
@@ -34,6 +36,7 @@ export const authMiddleware = (req: Request, res: Response, next: NextFunction) 
   const platformApiKey = req.headers[HEADER_PLATFORM_API_KEY] as string;
   const platformUserId = req.headers[HEADER_PLATFORM_USER_ID] as string;
   const clientUserId = req.headers[HEADER_CLIENT_USER_ID] as string;
+  const clientOrganizationId = req.headers[HEADER_CLIENT_ORGANIZATION_ID] as string;
   const agentId = req.headers[HEADER_AGENT_ID] as string | undefined;
 
   // Basic validation: Check for required headers
@@ -54,10 +57,11 @@ export const authMiddleware = (req: Request, res: Response, next: NextFunction) 
   // Attach credentials to the request object
   // Note: Further validation (e.g., checking API key validity against a database)
   // would typically happen here or in a dedicated service.
-  (req as AuthenticatedRequest).serviceCredentials = {
+  (req as AuthenticatedRequest).humanInternalCredentials = {
     platformApiKey,
     platformUserId,
     clientUserId, // Now guaranteed to be present
+    clientOrganizationId, // Now guaranteed to be present
     agentId,      // Will be undefined if header not present
   };
 
