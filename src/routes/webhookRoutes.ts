@@ -12,6 +12,7 @@ import { linkAgentController } from '../controllers/linkAgentController.js';
 import { incomingWebhookController } from '../controllers/incomingWebhookController.js';
 import { getUserCreatedWebhooksController } from '../controllers/getUserCreatedWebhooksController.js';
 import { getWebhookEventsController } from '../controllers/getWebhookEventsController.js';
+import { getLatestWebhookEventsController } from '../controllers/getLatestWebhookEventsController.js';
 import { authMiddleware } from '../middleware/auth.js';
 import { apiKeyAuth } from '../middleware/apiKeyAuth.js';
 
@@ -32,6 +33,7 @@ authenticatedRouter.post('/:webhookId/link-user', linkUserController);
 authenticatedRouter.post('/:webhookId/link-agent', linkAgentController);
 authenticatedRouter.get('/get-user-created-webhooks', getUserCreatedWebhooksController);
 authenticatedRouter.get('/:webhookId/events', getWebhookEventsController);
+authenticatedRouter.get('/events/latest', getLatestWebhookEventsController);
 
 router.use('/', authenticatedRouter); // Mount authenticated routes AFTER public routes
 

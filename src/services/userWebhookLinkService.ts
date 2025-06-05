@@ -105,7 +105,7 @@ export const updateUserWebhookStatus = async (
     const sql = `
         UPDATE user_webhooks
         SET 
-            status = $3,
+            status = $4,
             -- webhook_secret is NOT modified here
             -- client_user_identification_hash is NOT modified here and is deprecated
             updated_at = NOW()

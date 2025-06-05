@@ -13,8 +13,8 @@ import {
     CreateConversationInput,
     ServiceResponse,
     ConversationId,
-    PlatformUserId,
-    InternalCredentials,
+    MinimalInternalCredentials,
+    sanitizeConversationId
 } from '@agent-base/types';
 // @ts-ignore
 import { Message } from 'ai'; // Vercel AI SDK Message type
@@ -128,10 +128,14 @@ export const processResolvedWebhook = async (params: ProcessWebhookParams): Prom
         webhookSecret
     } = params;
 
-    console.log(`[Webhook Processor] Starting async processing for ${webhookProviderId}/${subscribedEventId}, User: ${platformUserId}, Agent: ${agentId}, Conversation: ${conversationId}`);
+    // Sanitize the conversation ID received from params
+    const originalConversationId = conversationId;
+    const sanitizedConversationId = sanitizeConversationId(originalConversationId);
+
+    console.log(`[Webhook Processor] Starting async processing for ${webhookProviderId}/${subscribedEventId}, User: ${platformUserId}, Agent: ${agentId}`);
+    console.log(`[Webhook Processor] Original Conversation ID: '${originalConversationId}', Sanitized Conversation ID: '${sanitizedConversationId}'`);
 
     // --- Log the incoming event to the database ---    
-    // Call the separate logging function (awaiting is optional as it handles its own errors)
     await _logWebhookEvent({
         payload,
         providerId: webhookProviderId,
@@ -139,7 +143,7 @@ export const processResolvedWebhook = async (params: ProcessWebhookParams): Prom
         clientUserId,
         clientOrganizationId,
         webhookSecret,
-        conversationId,
+        conversationId: sanitizedConversationId,
         webhookId, 
         agentId,
         platformUserId
@@ -156,7 +160,7 @@ export const processResolvedWebhook = async (params: ProcessWebhookParams): Prom
         }
         // --- 2. Prepare Internal Credentials ---
 
-        const internalCredentials: InternalCredentials = {
+        const internalCredentials: MinimalInternalCredentials = {
             platformApiKey,
             clientUserId,
             clientOrganizationId
@@ -167,16 +171,19 @@ export const processResolvedWebhook = async (params: ProcessWebhookParams): Prom
         const conversationInput: CreateConversationInput = {
             agentId,
             channelId: webhookProviderId,
-            conversationId
+            conversationId: sanitizedConversationId
         };
 
+        console.debug(`[Webhook Processor] Getting or creating conversation for Agent ${agentId}, Sanitized Conversation ID ${sanitizedConversationId}`);
+        console.debug(`[Webhook Processor] Internal Credentials: ${JSON.stringify(internalCredentials)}`);
+        console.debug(`[Webhook Processor] Conversation Input: ${JSON.stringify(conversationInput)}`);
         const getOrCreateConversationResponse : ServiceResponse<ConversationId> = await getOrCreateConversationClientUserApiService(
             conversationInput,
             internalCredentials
         );
 
         if (!getOrCreateConversationResponse.success) {
-            console.error(`[Webhook Processor] Failed to get/create conversation for Agent ${agentId}, Resolved Conversation ID ${conversationId}:`, getOrCreateConversationResponse.error);
+            console.error(`[Webhook Processor] Failed to get/create conversation for Agent ${agentId}, Sanitized Conversation ID ${sanitizedConversationId}:`, getOrCreateConversationResponse.error);
             // Stop processing if conversation cannot be established
             return;
         }
@@ -196,19 +203,19 @@ export const processResolvedWebhook = async (params: ProcessWebhookParams): Prom
         };
 
         const runResponse = await triggerAgentRunClientUserApiService(
-            conversationId,
+            sanitizedConversationId,
             webhookMessage,
             internalCredentials
         );
 
         if (!runResponse.success) {
-            console.error(`[Webhook Processor] Failed to trigger agent run for Agent ${agentId}, Conversation ${conversationId}:`, runResponse.error);
+            console.error(`[Webhook Processor] Failed to trigger agent run for Agent ${agentId}, Sanitized Conversation ID ${sanitizedConversationId}:`, runResponse.error);
             // Error logged, processing stops here for this event
         }
 
     } catch (error: unknown) {
         // Catch any unexpected errors during the asynchronous processing
-        console.error(`[Webhook Processor] Unhandled error during async processing for ${webhookProviderId}/${subscribedEventId}, User: ${platformUserId}:`, error);
+        console.error(`[Webhook Processor] Unhandled error during async processing for ${webhookProviderId}/${subscribedEventId}, User: ${platformUserId}, Sanitized Conversation ID: ${sanitizedConversationId}:`, error);
         // Log the error, but can't send a response back to the original caller.
     }
 };

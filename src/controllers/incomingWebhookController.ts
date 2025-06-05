@@ -47,6 +47,7 @@ export const incomingWebhookController = async (req: Request<IncomingWebhookPara
 
         // Basic validation of inputs
         if (!webhookProviderId || !subscribedEventId || !clientUserId || !clientOrganizationId || !secret) {
+            console.error(`Webhook resolution failed: Missing required parameters in URL path (webhookProviderId, subscribedEventId, clientUserId, clientOrganizationId) or query (secret).`);
             return res.status(400).json({
                 success: false,
                 error: 'Bad Request',
@@ -56,6 +57,7 @@ export const incomingWebhookController = async (req: Request<IncomingWebhookPara
         }
 
         if (!payload || typeof payload !== 'object' || Object.keys(payload).length === 0) {
+            console.error(`Webhook resolution failed: Request body is missing, not an object, or is empty. A JSON payload is expected.`);
             return res.status(400).json({
                 success: false,
                 error: 'Bad Request',
@@ -71,7 +73,7 @@ export const incomingWebhookController = async (req: Request<IncomingWebhookPara
         const findUserWebhookResult : UserWebhook | null = await findUserWebhookBySecret(secret);
 
         if (!findUserWebhookResult) {
-            console.warn(`Webhook resolution failed: No active UserWebhook found for Provider=${webhookProviderId}, Event=${subscribedEventId}, ClientUser=${clientUserId} with the provided secret.`);
+            console.error(`Webhook resolution failed: No active UserWebhook found for Provider=${webhookProviderId}, Event=${subscribedEventId}, ClientUser=${clientUserId} with the provided secret.`);
             return res.status(401).json({ // 401 Unauthorized, as the secret/combination is invalid
                 success: false,
                 error: 'Unauthorized',
@@ -80,7 +82,7 @@ export const incomingWebhookController = async (req: Request<IncomingWebhookPara
             });
         }
         if (findUserWebhookResult.status == WebhookStatus.UNSET) {
-            console.warn(`Webhook resolution failed: UserWebhook is unset for Provider=${webhookProviderId}, Event=${subscribedEventId}, ClientUser=${clientUserId} with the provided secret.`);
+            console.error(`Webhook resolution failed: UserWebhook is unset for Provider=${webhookProviderId}, Event=${subscribedEventId}, ClientUser=${clientUserId} with the provided secret.`);
             return res.status(401).json({ // 401 Unauthorized, as the secret/combination is invalid
                 success: false,
                 error: 'Unauthorized',
@@ -89,7 +91,7 @@ export const incomingWebhookController = async (req: Request<IncomingWebhookPara
             });
         }
         if (findUserWebhookResult.status == WebhookStatus.DISABLED) {
-            console.warn(`Webhook resolution failed: UserWebhook is disabled for Provider=${webhookProviderId}, Event=${subscribedEventId}, ClientUser=${clientUserId} with the provided secret.`);
+            console.error(`Webhook resolution failed: UserWebhook is disabled for Provider=${webhookProviderId}, Event=${subscribedEventId}, ClientUser=${clientUserId} with the provided secret.`);
             return res.status(401).json({ // 401 Unauthorized, as the secret/combination is invalid
                 success: false,
                 error: 'Disabled',
@@ -102,7 +104,7 @@ export const incomingWebhookController = async (req: Request<IncomingWebhookPara
         const userWebhook = findUserWebhookResult;
         const webhook : Webhook | null = await getWebhookById(userWebhook.webhookId);
         if (!webhook) {
-            console.warn(`Webhook resolution failed: No webhook definition found for UserWebhook: ${userWebhook.webhookId}`);
+            console.error(`Webhook resolution failed: No webhook definition found for UserWebhook: ${userWebhook.webhookId}`);
             return res.status(500).json({
                 success: false,
                 error: 'Internal Server Error',
@@ -111,7 +113,7 @@ export const incomingWebhookController = async (req: Request<IncomingWebhookPara
             });
         }
         if (webhook.webhookProviderId !== webhookProviderId || webhook.subscribedEventId !== subscribedEventId) {
-            console.warn(`Webhook resolution failed: Webhook definition mismatch for UserWebhook: ${userWebhook.webhookId}`);
+            console.error(`Webhook resolution failed: Webhook definition mismatch for UserWebhook: ${userWebhook.webhookId}`);
             return res.status(400).json({
                 success: false,
                 error: 'Bad Request',
@@ -124,7 +126,7 @@ export const incomingWebhookController = async (req: Request<IncomingWebhookPara
         const agentLink: AgentUserWebhook | null = await findAgentLink(userWebhook.webhookId, userWebhook.clientUserId, userWebhook.clientOrganizationId);
 
         if (!agentLink) {
-            console.warn(`No agent link found for UserWebhook: ${userWebhook.webhookId}, ClientUser: ${userWebhook.clientUserId}`);
+            console.error(`No agent link found for UserWebhook: ${userWebhook.webhookId}, ClientUser: ${userWebhook.clientUserId}`);
             return res.status(404).json({
                 success: false,
                 error: 'Not Found',
@@ -141,7 +143,7 @@ export const incomingWebhookController = async (req: Request<IncomingWebhookPara
         }
         
         if (!conversationIdString) {
-            console.warn(`conversationId could not be extracted for webhook ID: ${webhook.id} using mapping '${webhook.conversationIdIdentificationMapping}'. This is a required field for resolution.`);
+            console.error(`conversationId could not be extracted for webhook ID: ${webhook.id} using mapping '${webhook.conversationIdIdentificationMapping}'. This is a required field for resolution.`);
             return res.status(400).json({
                 success: false,
                 error: 'Bad Request',

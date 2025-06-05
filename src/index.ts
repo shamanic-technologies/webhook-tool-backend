@@ -120,6 +120,7 @@ const port = process.env.PORT || 3001;
 
 // --- Middleware ---
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 // --- Routes ---
 app.get('/health', (req: Request, res: Response) => {

@@ -9,17 +9,17 @@ importers:
   .:
     dependencies:
       '@agent-base/api-client':
-        specifier: ^0.39.0
-        version: 0.39.0(@agent-base/types@0.42.0(@types/node@20.17.57)(react@19.1.0)(zod@3.25.42))(@types/node@20.17.57)(react@19.1.0)(zod@3.25.42)
+        specifier: ^0.44.0
+        version: 0.44.0(@agent-base/types@0.44.0(@types/node@20.17.57)(react@19.1.0)(zod@3.25.51))(@types/node@20.17.57)(react@19.1.0)(zod@3.25.51)
       '@agent-base/secret-client':
-        specifier: ^0.13.0
-        version: 0.13.0(@types/node@20.17.57)(react@19.1.0)(zod@3.25.42)
+        specifier: ^0.14.0
+        version: 0.14.0(@types/node@20.17.57)(react@19.1.0)(zod@3.25.51)
       '@agent-base/types':
-        specifier: ^0.42.0
-        version: 0.42.0(@types/node@20.17.57)(react@19.1.0)(zod@3.25.42)
+        specifier: ^0.44.0
+        version: 0.44.0(@types/node@20.17.57)(react@19.1.0)(zod@3.25.51)
       ai:
         specifier: ^4.3.15
-        version: 4.3.16(react@19.1.0)(zod@3.25.42)
+        version: 4.3.16(react@19.1.0)(zod@3.25.51)
       dotenv:
         specifier: ^16.5.0
         version: 16.5.0
@@ -28,7 +28,7 @@ importers:
         version: 4.21.2
       openai:
         specifier: ^4.98.0
-        version: 4.104.0(zod@3.25.42)
+        version: 4.104.0(zod@3.25.51)
       pg:
         specifier: ^8.15.5
         version: 8.16.0
@@ -40,7 +40,7 @@ importers:
         version: 11.1.0
       zod:
         specifier: ^3.24.3
-        version: 3.25.42
+        version: 3.25.51
     devDependencies:
       '@redocly/cli':
         specifier: ^1.34.2
@@ -53,7 +53,7 @@ importers:
         version: 20.17.57
       '@types/pg':
         specifier: ^8.11.14
-        version: 8.15.2
+        version: 8.15.4
       '@types/uuid':
         specifier: ^10.0.0
         version: 10.0.0
@@ -77,7 +77,7 @@ importers:
         version: 5.4.1(eslint-config-prettier@9.1.0(eslint@8.57.1))(eslint@8.57.1)(prettier@3.5.3)
       node-pg-migrate:
         specifier: ^7.9.1
-        version: 7.9.1(@types/pg@8.15.2)(pg@8.16.0)
+        version: 7.9.1(@types/pg@8.15.4)(pg@8.16.0)
       prettier:
         specifier: ^3.5.3
         version: 3.5.3
@@ -96,20 +96,20 @@ importers:
 
 packages:
 
-  '@agent-base/api-client@0.39.0':
-    resolution: {integrity: sha512-YVClNqCNtFYYBE3yHH1noDln1VZf65BS3JN0ZI5fxNH4tCyXmiq4A2LikJIIx+sqH7pyv6pBkd1Rj4/TRYFxjg==}
+  '@agent-base/api-client@0.44.0':
+    resolution: {integrity: sha512-qmPbrDt+URbzzT1bzLMsc/cdDb8Bgo3mOFRHOuHtWRB+pOQE4JCqyrDIgULAxq92U6usvHpEiaCZn4sptu65BA==}
     peerDependencies:
-      '@agent-base/types': 0.40.0
+      '@agent-base/types': 0.43.0
 
-  '@agent-base/secret-client@0.13.0':
-    resolution: {integrity: sha512-igC7QK0YW6LN5NhlwOzgH4ubft0SE/xVu0eDA3FlJ6BUq0xHGkjl9yMB5FcKlE19Bp4u7hGYsi16HnV7vKTXlQ==}
+  '@agent-base/secret-client@0.14.0':
+    resolution: {integrity: sha512-0eCgUdaz55CqPD+EJ/DWRuLDIuFfiM5oB/0CxCrIzng9j4j+Sk8RngAfssc3oSbvBnSvrXKrgnYt+j9VCvTA4Q==}
     engines: {node: '>=18.0.0'}
 
-  '@agent-base/types@0.40.0':
-    resolution: {integrity: sha512-FWvNgVVoqfDzwwd2P8dhGODr3vo3UBObFOYzrB0qQaaJTc2dRIfqLoO9kVLa6p/gGQV2lA1JgR1TXeq+bzc92Q==}
+  '@agent-base/types@0.43.0':
+    resolution: {integrity: sha512-iCfJMMuHYLj6oxltO2LXmvovmGrWzJ2Hi1ZsUgnXDeb8zRedt9j4X/Iog1mqxbotBCzeWDRCaCBpyQLvbXyNhw==}
 
-  '@agent-base/types@0.42.0':
-    resolution: {integrity: sha512-0Gw3zyWtTcD9TTJupkiRctfYoSSi9LXP9GeQOndPXovP9fPH3sbvcWjxFJp5I/MCph46QhikhNqNTa9nv1hAzg==}
+  '@agent-base/types@0.44.0':
+    resolution: {integrity: sha512-qjwMn86rfwXxJ2X4XbXLYVFE2xADe1QfJhD4bCwVVgdbkM2RBMBPt1njskKP4TX7doh29uRiupyyf/jdxF7gvg==}
 
   '@ai-sdk/provider-utils@2.2.8':
     resolution: {integrity: sha512-fqhG+4sCVv8x7nFzYnFo19ryhAa3w096Kmc3hWxMQfW/TubPOmt3A6tYZhl4mUfQWWQMsuSkLrtjlWuXBVSGQA==}
@@ -511,8 +511,8 @@ packages:
     resolution: {integrity: sha512-+1VkjdD0QBLPodGrJUeqarH8VAIvQODIbwh9XpP5Syisf7YoQgsJKPNFoqqLQlu+VQ/tVSshMR6loPMn8U+dPg==}
     engines: {node: '>=14'}
 
-  '@pkgr/core@0.2.4':
-    resolution: {integrity: sha512-ROFF39F6ZrnzSUEmQQZUar0Jt4xVoP9WnDRdWwF4NNcXs3xBTLgBUDoOwW141y1jP+S8nahIbdxbFC7IShw9Iw==}
+  '@pkgr/core@0.2.7':
+    resolution: {integrity: sha512-YLT9Zo3oNPJoBjBc4q8G2mjU4tqIbf5CEOORbUUr48dCD9q3umJ3IPlVqOqDakPfd2HuwccBaqlGhN4Gmr5OWg==}
     engines: {node: ^12.20.0 || ^14.18.0 || >=16.0.0}
 
   '@protobufjs/aspromise@1.1.2':
@@ -726,8 +726,8 @@ packages:
   '@types/node@20.17.57':
     resolution: {integrity: sha512-f3T4y6VU4fVQDKVqJV4Uppy8c1p/sVvS3peyqxyWnzkqXFJLRU7Y1Bl7rMS1Qe9z0v4M6McY0Fp9yBsgHJUsWQ==}
 
-  '@types/pg@8.15.2':
-    resolution: {integrity: sha512-+BKxo5mM6+/A1soSHBI7ufUglqYXntChLDyTbvcAn1Lawi9J7J9Ok3jt6w7I0+T/UDJ4CyhHk66+GZbwmkYxSg==}
+  '@types/pg@8.15.4':
+    resolution: {integrity: sha512-I6UNVBAoYbvuWkkU3oosC8yxqH21f4/Jc4DK71JLG3dT2mdlGe1z+ep/LQGXaKaOgcvUrsQoPRqfgtMcvZiJhg==}
 
   '@types/qs@6.14.0':
     resolution: {integrity: sha512-eOunJqu0K1923aExK6y8p6fsihYEn/BYuQ4g0CxAAgFc4b/ZLN4CrsRZ55srTdqoiLzU2B2evC+apEIxprEzkQ==}
@@ -1448,8 +1448,8 @@ packages:
   function-bind@1.1.2:
     resolution: {integrity: sha512-7XHNxH7qX9xG5mIwxkhumTox/MIRNcOgDrxWsMt2pAr23WHp6MrRlN7FBSFpCpr+oVO0F744iUgR82nJMfG2SA==}
 
-  gaxios@7.0.0-rc.5:
-    resolution: {integrity: sha512-s9rlpplwdb/KCq2DYevVTM/MpozeVZuR3pkzDGXtRhY7wD4fXftIYXUAerX07ZPB3J8/dHUJsX7fPnN2O4Psuw==}
+  gaxios@7.0.0-rc.6:
+    resolution: {integrity: sha512-osVFpgeBiwTM2AVI9MXvb8iWzM6oSMbTVWc65Gm5BgBlE+nUA6PBHFMaYpqjZx1AhUH7aPOZq78WcRAM6hhAwA==}
     engines: {node: '>=18'}
 
   gcp-metadata@7.0.0-rc.1:
@@ -1503,8 +1503,8 @@ packages:
     resolution: {integrity: sha512-jhIXaOzy1sb8IyocaruWSn1TjmnBVs8Ayhcy83rmxNJ8q2uWKCAj3CnJY+KpGSXCueAPc0i05kVvVKtP1t9S3g==}
     engines: {node: '>=10'}
 
-  google-auth-library@10.0.0-rc.2:
-    resolution: {integrity: sha512-LjkDUtHV8mFFV0pDWpPTjUuAPd6WDBs2y/mTzGSmwQJkDRinOpQyu7e/0pqQoDoanKGwaQJH5729uZ+/5Uz8fw==}
+  google-auth-library@10.0.0-rc.3:
+    resolution: {integrity: sha512-WC9wfEKK0bk3seWKsDn2loduLth6JWKTsrbWftzrhPuzpwnVXb5oi2+aa0JDBxLBDdkGesLvTQ67F2nZ7leq1Q==}
     engines: {node: '>=18'}
 
   google-gax@5.0.1-rc.1:
@@ -1964,9 +1964,6 @@ packages:
     resolution: {integrity: sha512-W67iLl4J2EXEGTbfeHCffrjDfitvLANg0UlX3wFUUSTx92KXRFegMHUVgSqE+wvhAbi4WqjGg9czysTV2Epbew==}
     engines: {node: '>= 0.4'}
 
-  obuf@1.1.2:
-    resolution: {integrity: sha512-PX1wu0AmAdPqOL1mWhqmlOd8kOIZQwGZw6rh7uby9fTc5lhaOWFLX3I6R1hrF9k3zUY40e6igsLGkDXK92LJNg==}
-
   on-finished@2.4.1:
     resolution: {integrity: sha512-oVlzkg3ENAhCk2zdv7IJwd/QUD4z2RxRwpkcGY8psCVcCYZNq4wYnVWALHM+brtuJjePWiYF/ClmuDr8Ch5+kg==}
     engines: {node: '>= 0.8'}
@@ -2068,10 +2065,6 @@ packages:
     resolution: {integrity: sha512-WCtabS6t3c8SkpDBUlb1kjOs7l66xsGdKpIPZsg4wR+B3+u9UAum2odSsF9tnvxg80h4ZxLWMy4pRjOsFIqQpw==}
     engines: {node: '>=4.0.0'}
 
-  pg-numeric@1.0.2:
-    resolution: {integrity: sha512-BM/Thnrw5jm2kKLE5uJkXqqExRUY/toLHda65XgFTBTFYZyopbKjBe29Ii3RbkvlsMoFwD+tHeGaCjjv0gHlyw==}
-    engines: {node: '>=4'}
-
   pg-pool@3.10.0:
     resolution: {integrity: sha512-DzZ26On4sQ0KmqnO34muPcmKbhrjmyiO4lCCR0VwEd7MjmiKf5NTg/6+apUEu0NF7ESa37CGzFxH513CoUmWnA==}
     peerDependencies:
@@ -2083,10 +2076,6 @@ packages:
   pg-types@2.2.0:
     resolution: {integrity: sha512-qTAAlrEsl8s4OiEQY69wDvcMIdQN6wdz5ojQiOy6YRMuynxenON0O5oCpJI6lshc6scgAY8qvJ2On/p+CXY0GA==}
     engines: {node: '>=4'}
-
-  pg-types@4.0.2:
-    resolution: {integrity: sha512-cRL3JpS3lKMGsKaWndugWQoLOCoP+Cic8oseVcbr0qhPzYD5DWXK+RZ9LY9wxRf7RQia4SCwQlXk0q6FCPrVng==}
-    engines: {node: '>=10'}
 
   pg@8.16.0:
     resolution: {integrity: sha512-7SKfdvP8CTNXjMUzfcVTaI+TDzBEeaUnVwiVGZQD1Hh33Kpev7liQba9uLd4CfN8r9mCVsD0JIpq03+Unpz+kg==}
@@ -2159,36 +2148,17 @@ packages:
     resolution: {integrity: sha512-VpZrUqU5A69eQyW2c5CA1jtLecCsN2U/bD6VilrFDWq5+5UIEVO7nazS3TEcHf1zuPYO/sqGvUvW62g86RXZuA==}
     engines: {node: '>=4'}
 
-  postgres-array@3.0.4:
-    resolution: {integrity: sha512-nAUSGfSDGOaOAEGwqsRY27GPOea7CNipJPOA7lPbdEpx5Kg3qzdP0AaWC5MlhTWV9s4hFX39nomVZ+C4tnGOJQ==}
-    engines: {node: '>=12'}
-
   postgres-bytea@1.0.0:
     resolution: {integrity: sha512-xy3pmLuQqRBZBXDULy7KbaitYqLcmxigw14Q5sj8QBVLqEwXfeybIKVWiqAXTlcvdvb0+xkOtDbfQMOf4lST1w==}
     engines: {node: '>=0.10.0'}
-
-  postgres-bytea@3.0.0:
-    resolution: {integrity: sha512-CNd4jim9RFPkObHSjVHlVrxoVQXz7quwNFpz7RY1okNNme49+sVyiTvTRobiLV548Hx/hb1BG+iE7h9493WzFw==}
-    engines: {node: '>= 6'}
 
   postgres-date@1.0.7:
     resolution: {integrity: sha512-suDmjLVQg78nMK2UZ454hAG+OAW+HQPZ6n++TNDUX+L0+uUlLywnoxJKDou51Zm+zTCjrCl0Nq6J9C5hP9vK/Q==}
     engines: {node: '>=0.10.0'}
 
-  postgres-date@2.1.0:
-    resolution: {integrity: sha512-K7Juri8gtgXVcDfZttFKVmhglp7epKb1K4pgrkLxehjqkrgPhfG6OO8LHLkfaqkbpjNRnra018XwAr1yQFWGcA==}
-    engines: {node: '>=12'}
-
   postgres-interval@1.2.0:
     resolution: {integrity: sha512-9ZhXKM/rw350N1ovuWHbGxnGh/SNJ4cnxHiM0rxE4VN41wsg8P8zWn9hv/buK00RP4WvlOyr/RBDiptyxVbkZQ==}
     engines: {node: '>=0.10.0'}
-
-  postgres-interval@3.0.0:
-    resolution: {integrity: sha512-BSNDnbyZCXSxgA+1f5UU2GmwhoI0aU5yMxRGO8CdFEcY2BQF9xm/7MqKnYoM1nJDk8nONNWDk9WeSmePFhQdlw==}
-    engines: {node: '>=12'}
-
-  postgres-range@1.1.4:
-    resolution: {integrity: sha512-i/hbxIE9803Alj/6ytL7UHQxRvZkI9O4Sy+J3HGc4F4oo/2eQAjTSNJ0bfxyse3bH0nuVesCk+3IRLaMtG3H6w==}
 
   prelude-ls@1.2.1:
     resolution: {integrity: sha512-vkcDPrRZo1QZLbn5RLGPpg/WmIQ65qoWWhcGKf/b5eplkkarX0m9z8ppCat4mlOqUsWpyNuYgO3VRyrYHSzX5g==}
@@ -2487,8 +2457,8 @@ packages:
     resolution: {integrity: sha512-6fPc+R4ihwqP6N/aIv2f1gMH8lOVtWQHoqC4yK6oSDVVocumAsfCqjkXnqiYMhmMwS/mEHLp7Vehlt3ql6lEig==}
     engines: {node: '>=8'}
 
-  stripe@18.2.0:
-    resolution: {integrity: sha512-RpOaGh5CLs3SYeVXw1CIQZNwPVADBJtgNyUgu+ZkIvu3u4pkZvNrlKr+WaLoNjSPQWef0dikxDS2AKHBl/l3bg==}
+  stripe@18.2.1:
+    resolution: {integrity: sha512-GwB1B7WSwEBzW4dilgyJruUYhbGMscrwuyHsPUmSRKrGHZ5poSh2oU9XKdii5BFVJzXHn35geRvGJ6R8bYcp8w==}
     engines: {node: '>=12.*'}
     peerDependencies:
       '@types/node': '>=12.x.x'
@@ -2805,27 +2775,27 @@ packages:
     peerDependencies:
       zod: ^3.24.1
 
-  zod@3.25.42:
-    resolution: {integrity: sha512-PcALTLskaucbeHc41tU/xfjfhcz8z0GdhhDcSgrCTmSazUuqnYqiXO63M0QUBVwpBlsLsNVn5qHSC5Dw3KZvaQ==}
+  zod@3.25.51:
+    resolution: {integrity: sha512-TQSnBldh+XSGL+opiSIq0575wvDPqu09AqWe1F7JhUMKY+M91/aGlK4MhpVNO7MgYfHcVCB1ffwAUTJzllKJqg==}
 
 snapshots:
 
-  '@agent-base/api-client@0.39.0(@agent-base/types@0.42.0(@types/node@20.17.57)(react@19.1.0)(zod@3.25.42))(@types/node@20.17.57)(react@19.1.0)(zod@3.25.42)':
+  '@agent-base/api-client@0.44.0(@agent-base/types@0.44.0(@types/node@20.17.57)(react@19.1.0)(zod@3.25.51))(@types/node@20.17.57)(react@19.1.0)(zod@3.25.51)':
     dependencies:
-      '@agent-base/types': 0.42.0(@types/node@20.17.57)(react@19.1.0)(zod@3.25.42)
+      '@agent-base/types': 0.44.0(@types/node@20.17.57)(react@19.1.0)(zod@3.25.51)
       '@types/stripe': 8.0.417(@types/node@20.17.57)
-      ai: 4.3.16(react@19.1.0)(zod@3.25.42)
+      ai: 4.3.16(react@19.1.0)(zod@3.25.51)
       axios: 1.9.0
-      stripe: 18.2.0(@types/node@20.17.57)
+      stripe: 18.2.1(@types/node@20.17.57)
     transitivePeerDependencies:
       - '@types/node'
       - debug
       - react
       - zod
 
-  '@agent-base/secret-client@0.13.0(@types/node@20.17.57)(react@19.1.0)(zod@3.25.42)':
+  '@agent-base/secret-client@0.14.0(@types/node@20.17.57)(react@19.1.0)(zod@3.25.51)':
     dependencies:
-      '@agent-base/types': 0.40.0(@types/node@20.17.57)(react@19.1.0)(zod@3.25.42)
+      '@agent-base/types': 0.43.0(@types/node@20.17.57)(react@19.1.0)(zod@3.25.51)
       '@google-cloud/secret-manager': 6.0.1
     transitivePeerDependencies:
       - '@types/node'
@@ -2834,63 +2804,63 @@ snapshots:
       - supports-color
       - zod
 
-  '@agent-base/types@0.40.0(@types/node@20.17.57)(react@19.1.0)(zod@3.25.42)':
+  '@agent-base/types@0.43.0(@types/node@20.17.57)(react@19.1.0)(zod@3.25.51)':
     dependencies:
       '@types/json-schema': 7.0.15
       '@types/stripe': 8.0.417(@types/node@20.17.57)
-      ai: 4.3.16(react@19.1.0)(zod@3.25.42)
+      ai: 4.3.16(react@19.1.0)(zod@3.25.51)
       axios: 1.9.0
       json-schema: 0.4.0
       openapi3-ts: 4.4.0
-      stripe: 18.2.0(@types/node@20.17.57)
+      stripe: 18.2.1(@types/node@20.17.57)
     transitivePeerDependencies:
       - '@types/node'
       - debug
       - react
       - zod
 
-  '@agent-base/types@0.42.0(@types/node@20.17.57)(react@19.1.0)(zod@3.25.42)':
+  '@agent-base/types@0.44.0(@types/node@20.17.57)(react@19.1.0)(zod@3.25.51)':
     dependencies:
       '@types/json-schema': 7.0.15
       '@types/stripe': 8.0.417(@types/node@20.17.57)
-      ai: 4.3.16(react@19.1.0)(zod@3.25.42)
+      ai: 4.3.16(react@19.1.0)(zod@3.25.51)
       axios: 1.9.0
       json-schema: 0.4.0
       openapi3-ts: 4.4.0
-      stripe: 18.2.0(@types/node@20.17.57)
+      stripe: 18.2.1(@types/node@20.17.57)
     transitivePeerDependencies:
       - '@types/node'
       - debug
       - react
       - zod
 
-  '@ai-sdk/provider-utils@2.2.8(zod@3.25.42)':
+  '@ai-sdk/provider-utils@2.2.8(zod@3.25.51)':
     dependencies:
       '@ai-sdk/provider': 1.1.3
       nanoid: 3.3.11
       secure-json-parse: 2.7.0
-      zod: 3.25.42
+      zod: 3.25.51
 
   '@ai-sdk/provider@1.1.3':
     dependencies:
       json-schema: 0.4.0
 
-  '@ai-sdk/react@1.2.12(react@19.1.0)(zod@3.25.42)':
+  '@ai-sdk/react@1.2.12(react@19.1.0)(zod@3.25.51)':
     dependencies:
-      '@ai-sdk/provider-utils': 2.2.8(zod@3.25.42)
-      '@ai-sdk/ui-utils': 1.2.11(zod@3.25.42)
+      '@ai-sdk/provider-utils': 2.2.8(zod@3.25.51)
+      '@ai-sdk/ui-utils': 1.2.11(zod@3.25.51)
       react: 19.1.0
       swr: 2.3.3(react@19.1.0)
       throttleit: 2.1.0
     optionalDependencies:
-      zod: 3.25.42
+      zod: 3.25.51
 
-  '@ai-sdk/ui-utils@1.2.11(zod@3.25.42)':
+  '@ai-sdk/ui-utils@1.2.11(zod@3.25.51)':
     dependencies:
       '@ai-sdk/provider': 1.1.3
-      '@ai-sdk/provider-utils': 2.2.8(zod@3.25.42)
-      zod: 3.25.42
-      zod-to-json-schema: 3.24.5(zod@3.25.42)
+      '@ai-sdk/provider-utils': 2.2.8(zod@3.25.51)
+      zod: 3.25.51
+      zod-to-json-schema: 3.24.5(zod@3.25.51)
 
   '@babel/code-frame@7.27.1':
     dependencies:
@@ -3197,7 +3167,7 @@ snapshots:
   '@pkgjs/parseargs@0.11.0':
     optional: true
 
-  '@pkgr/core@0.2.4': {}
+  '@pkgr/core@0.2.7': {}
 
   '@protobufjs/aspromise@1.1.2': {}
 
@@ -3430,11 +3400,11 @@ snapshots:
     dependencies:
       undici-types: 6.19.8
 
-  '@types/pg@8.15.2':
+  '@types/pg@8.15.4':
     dependencies:
       '@types/node': 20.17.57
       pg-protocol: 1.10.0
-      pg-types: 4.0.2
+      pg-types: 2.2.0
 
   '@types/qs@6.14.0': {}
 
@@ -3460,7 +3430,7 @@ snapshots:
 
   '@types/stripe@8.0.417(@types/node@20.17.57)':
     dependencies:
-      stripe: 18.2.0(@types/node@20.17.57)
+      stripe: 18.2.1(@types/node@20.17.57)
     transitivePeerDependencies:
       - '@types/node'
 
@@ -3587,15 +3557,15 @@ snapshots:
     dependencies:
       humanize-ms: 1.2.1
 
-  ai@4.3.16(react@19.1.0)(zod@3.25.42):
+  ai@4.3.16(react@19.1.0)(zod@3.25.51):
     dependencies:
       '@ai-sdk/provider': 1.1.3
-      '@ai-sdk/provider-utils': 2.2.8(zod@3.25.42)
-      '@ai-sdk/react': 1.2.12(react@19.1.0)(zod@3.25.42)
-      '@ai-sdk/ui-utils': 1.2.11(zod@3.25.42)
+      '@ai-sdk/provider-utils': 2.2.8(zod@3.25.51)
+      '@ai-sdk/react': 1.2.12(react@19.1.0)(zod@3.25.51)
+      '@ai-sdk/ui-utils': 1.2.11(zod@3.25.51)
       '@opentelemetry/api': 1.9.0
       jsondiffpatch: 0.6.0
-      zod: 3.25.42
+      zod: 3.25.51
     optionalDependencies:
       react: 19.1.0
 
@@ -4220,7 +4190,7 @@ snapshots:
 
   function-bind@1.1.2: {}
 
-  gaxios@7.0.0-rc.5:
+  gaxios@7.0.0-rc.6:
     dependencies:
       extend: 3.0.2
       https-proxy-agent: 7.0.6
@@ -4230,7 +4200,7 @@ snapshots:
 
   gcp-metadata@7.0.0-rc.1:
     dependencies:
-      gaxios: 7.0.0-rc.5
+      gaxios: 7.0.0-rc.6
       google-logging-utils: 1.1.1
       json-bigint: 1.0.0
     transitivePeerDependencies:
@@ -4310,11 +4280,11 @@ snapshots:
       merge2: 1.4.1
       slash: 3.0.0
 
-  google-auth-library@10.0.0-rc.2:
+  google-auth-library@10.0.0-rc.3:
     dependencies:
       base64-js: 1.5.1
       ecdsa-sig-formatter: 1.0.11
-      gaxios: 7.0.0-rc.5
+      gaxios: 7.0.0-rc.6
       gcp-metadata: 7.0.0-rc.1
       google-logging-utils: 1.1.1
       gtoken: 8.0.0-rc.1
@@ -4329,7 +4299,7 @@ snapshots:
       '@types/long': 5.0.0
       abort-controller: 3.0.0
       duplexify: 4.1.3
-      google-auth-library: 10.0.0-rc.2
+      google-auth-library: 10.0.0-rc.3
       google-logging-utils: 1.1.1
       node-fetch: 3.3.2
       object-hash: 3.0.0
@@ -4347,7 +4317,7 @@ snapshots:
 
   gtoken@8.0.0-rc.1:
     dependencies:
-      gaxios: 7.0.0-rc.5
+      gaxios: 7.0.0-rc.6
       jws: 4.0.0
     transitivePeerDependencies:
       - supports-color
@@ -4691,13 +4661,13 @@ snapshots:
       fetch-blob: 3.2.0
       formdata-polyfill: 4.0.10
 
-  node-pg-migrate@7.9.1(@types/pg@8.15.2)(pg@8.16.0):
+  node-pg-migrate@7.9.1(@types/pg@8.15.4)(pg@8.16.0):
     dependencies:
       glob: 11.0.2
       pg: 8.16.0
       yargs: 17.7.2
     optionalDependencies:
-      '@types/pg': 8.15.2
+      '@types/pg': 8.15.4
 
   node-readfiles@0.2.0:
     dependencies:
@@ -4742,8 +4712,6 @@ snapshots:
 
   object-inspect@1.13.4: {}
 
-  obuf@1.1.2: {}
-
   on-finished@2.4.1:
     dependencies:
       ee-first: 1.1.1
@@ -4759,7 +4727,7 @@ snapshots:
       is-inside-container: 1.0.0
       is-wsl: 3.1.0
 
-  openai@4.104.0(zod@3.25.42):
+  openai@4.104.0(zod@3.25.51):
     dependencies:
       '@types/node': 18.19.110
       '@types/node-fetch': 2.6.12
@@ -4769,7 +4737,7 @@ snapshots:
       formdata-node: 4.4.1
       node-fetch: 2.7.0
     optionalDependencies:
-      zod: 3.25.42
+      zod: 3.25.51
     transitivePeerDependencies:
       - encoding
 
@@ -4843,8 +4811,6 @@ snapshots:
 
   pg-int8@1.0.1: {}
 
-  pg-numeric@1.0.2: {}
-
   pg-pool@3.10.0(pg@8.16.0):
     dependencies:
       pg: 8.16.0
@@ -4858,16 +4824,6 @@ snapshots:
       postgres-bytea: 1.0.0
       postgres-date: 1.0.7
       postgres-interval: 1.2.0
-
-  pg-types@4.0.2:
-    dependencies:
-      pg-int8: 1.0.1
-      pg-numeric: 1.0.2
-      postgres-array: 3.0.4
-      postgres-bytea: 3.0.0
-      postgres-date: 2.1.0
-      postgres-interval: 3.0.0
-      postgres-range: 1.1.4
 
   pg@8.16.0:
     dependencies:
@@ -4923,25 +4879,13 @@ snapshots:
 
   postgres-array@2.0.0: {}
 
-  postgres-array@3.0.4: {}
-
   postgres-bytea@1.0.0: {}
 
-  postgres-bytea@3.0.0:
-    dependencies:
-      obuf: 1.1.2
-
   postgres-date@1.0.7: {}
-
-  postgres-date@2.1.0: {}
 
   postgres-interval@1.2.0:
     dependencies:
       xtend: 4.0.2
-
-  postgres-interval@3.0.0: {}
-
-  postgres-range@1.1.4: {}
 
   prelude-ls@1.2.1: {}
 
@@ -5303,7 +5247,7 @@ snapshots:
 
   strip-json-comments@3.1.1: {}
 
-  stripe@18.2.0(@types/node@20.17.57):
+  stripe@18.2.1(@types/node@20.17.57):
     dependencies:
       qs: 6.14.0
     optionalDependencies:
@@ -5367,7 +5311,7 @@ snapshots:
 
   synckit@0.11.8:
     dependencies:
-      '@pkgr/core': 0.2.4
+      '@pkgr/core': 0.2.7
 
   teeny-request@10.1.0:
     dependencies:
@@ -5603,8 +5547,8 @@ snapshots:
 
   yocto-queue@0.1.0: {}
 
-  zod-to-json-schema@3.24.5(zod@3.25.42):
+  zod-to-json-schema@3.24.5(zod@3.25.51):
     dependencies:
-      zod: 3.25.42
+      zod: 3.25.51
 
-  zod@3.25.42: {}
+  zod@3.25.51: {}

@@ -29,7 +29,7 @@ export const linkAgentToWebhook = async (
     const sql = `
         INSERT INTO webhook_agent_links (webhook_id, client_user_id, client_organization_id, platform_user_id, agent_id, created_at)
         VALUES ($1, $2, $3, $4, $5, NOW())
-        ON CONFLICT (webhook_id, client_user_id, client_organization_id, agent_id) DO NOTHING
+        ON CONFLICT (webhook_id, client_user_id, agent_id) DO NOTHING
         RETURNING *;
     `;
     try {
