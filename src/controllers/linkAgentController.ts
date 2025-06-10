@@ -39,37 +39,64 @@ export const linkAgentController = async (req: Request, res: Response<ServiceRes
             return res.status(400).json({
                 success: false,
                 error: 'Invalid agentId format.',
-                details: 'The provided agentId does not match the expected UUID format.'
+                details: 'The provided agentId does not match the expected UUID format.',
+                hint: 'This error shouldn\'t happen. Please contact support.'
             });
         }
 
         const clientUserId = (req as AuthenticatedRequest).humanInternalCredentials?.clientUserId;
         if (!clientUserId) {
             console.error('Client User ID not found in serviceCredentials');
-            return res.status(401).json({ success: false, error: 'Unauthorized', details: 'Client User ID header is required.' });
+            return res.status(401).json(
+                { 
+                    success: false, 
+                    error: 'Unauthorized', 
+                    details: 'Client User ID header is required.',
+                    hint: 'This error shouldn\'t happen. Please contact support.'
+                });
         }
         const clientOrganizationId = (req as AuthenticatedRequest).humanInternalCredentials?.clientOrganizationId;
         if (!clientOrganizationId) {
             console.error('Client Organization ID not found in serviceCredentials');
-            return res.status(401).json({ success: false, error: 'Unauthorized', details: 'Client Organization ID header is required.' });
+            return res.status(401).json({ 
+                success: false, 
+                error: 'Unauthorized', 
+                details: 'Client Organization ID header is required.',
+                hint: 'This error shouldn\'t happen. Please contact support.'
+            });
         }
         // Also get platformUserId
         const platformUserId = (req as AuthenticatedRequest).humanInternalCredentials?.platformUserId;
         if (!platformUserId) {
             console.error('Platform User ID not found in serviceCredentials');
             // Add check for platformUserId as it's needed for the service
-             return res.status(401).json({ success: false, error: 'Unauthorized', details: 'Platform User ID header is required.' });
+             return res.status(401).json({ 
+                success: false, 
+                error: 'Unauthorized', 
+                details: 'Platform User ID header is required.',
+                hint: 'This error shouldn\'t happen. Please contact support.'
+            });
         }
 
         // Ensure user webhook link exists and is active first
         const userWebhookRecord = await findUserWebhookService(webhookId, clientUserId, clientOrganizationId);
         if (!userWebhookRecord) {
             console.error(`[Controller Error] Link Agent: User is not linked to webhook ${webhookId}`);
-             return res.status(404).json({ success: false, error: 'Not Found', details: 'User is not linked to this webhook.' });
+             return res.status(404).json({ 
+                success: false, 
+                error: 'Not Found', 
+                details: 'User is not linked to this webhook.',
+                hint: 'Start by linking the user to the webhook.'
+            });
         }
         if (userWebhookRecord.status !== WebhookStatus.ACTIVE) {
             console.error(`[Controller Error] Link Agent: Webhook link for user ${clientUserId} is not active.`);
-             return res.status(400).json({ success: false, error: 'Bad Request', details: 'Webhook link for user is not active. Cannot link agent.' });
+             return res.status(400).json({ 
+                success: false, 
+                error: 'Bad Request', 
+                details: 'Webhook link for user is not active. Cannot link agent.',
+                hint: 'Start by linking the user to the webhook.'
+            });
         }
 
         // Pass platformUserId to the service function
