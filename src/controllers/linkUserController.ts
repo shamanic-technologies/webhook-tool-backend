@@ -66,6 +66,7 @@ function _validateLinkUserRequest(
         success: false,
         error: "Unauthorized",
         details: "Client User ID header is required.",
+        hint: "This error shouldn't happen. Please contact support."
       },
     } as LinkUserValidationResult;
   }
@@ -76,6 +77,7 @@ function _validateLinkUserRequest(
         success: false,
         error: "Unauthorized",
         details: "Client Organization ID header is required.",
+        hint: "This error shouldn't happen. Please contact support."
       },
     } as LinkUserValidationResult;
   }
@@ -86,6 +88,7 @@ function _validateLinkUserRequest(
         success: false,
         error: "Unauthorized",
         details: "Platform User ID missing.",
+        hint: "This error shouldn't happen. Please contact support."
       },
     } as LinkUserValidationResult;
   }
@@ -158,7 +161,8 @@ async function _checkWebhookSetupStatus(
       2. Provide guidance for the user to enable the event ${webhook.subscribedEventId}
       3. Provide guidance for the user to click on "Confirm" button within the current chat interface once done.
       4. Once clicked, ask the user to notify you.
-      5. Once notified, call again this tool to confirm the status of the webhook link.`,
+      5. Once notified, call again the link user tool to confirm the status of the webhook link.
+      6. If this message after again, it means the user has not clicked on the confirmation button.`,
       webhookUrlToInput: webhookUrlToInput, 
       ...(missingConfirmations.length > 0 && {
         requiredActionConfirmations: missingConfirmations,
@@ -195,6 +199,7 @@ export const linkUserController = async (
         success: false,
         error: "Not Found",
         details: "Webhook definition not found.",
+        hint: "This error shouldn't happen. Please contact support."
       });
     }
 
@@ -219,7 +224,7 @@ export const linkUserController = async (
     
     const currentStatus = userWebhookLink.status;
 
-    const setupStatus = await _checkWebhookSetupStatus(webhook, clientUserId, clientOrganizationId);
+    const setupStatus: SetupStatusResult = await _checkWebhookSetupStatus(webhook, clientUserId, clientOrganizationId);
 
     if (setupStatus.isSetupNeeded) {
       let finalUserWebhookLink = userWebhookLink;
@@ -234,7 +239,6 @@ export const linkUserController = async (
       const response: SuccessResponse<SetupNeeded> = {
         success: true,
         data: setupStatus.setupNeededData!,
-        hint: "Once confirmation from the user that the setup is complete, call again this tool to activate the webhook user link"
       };
       return res.status(200).json(response);
     } else {
