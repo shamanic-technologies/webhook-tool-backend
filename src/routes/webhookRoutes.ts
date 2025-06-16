@@ -13,6 +13,9 @@ import { incomingWebhookController } from '../controllers/incomingWebhookControl
 import { getUserCreatedWebhooksController } from '../controllers/getUserCreatedWebhooksController.js';
 import { getWebhookEventsController } from '../controllers/getWebhookEventsController.js';
 import { getLatestWebhookEventsController } from '../controllers/getLatestWebhookEventsController.js';
+import { renameWebhookController } from '../controllers/renameWebhookController.js';
+import { deleteWebhookController } from '../controllers/deleteWebhookController.js';
+import { updateWebhookController } from '../controllers/updateWebhookController.js';
 import { authMiddleware } from '../middleware/auth.js';
 import { apiKeyAuth } from '../middleware/apiKeyAuth.js';
 
@@ -31,6 +34,9 @@ authenticatedRouter.post('/', createWebhookController);
 authenticatedRouter.post('/search', searchWebhooksController);
 authenticatedRouter.post('/:webhookId/link-user', linkUserController);
 authenticatedRouter.post('/:webhookId/link-agent', linkAgentController);
+authenticatedRouter.patch('/:webhookId/rename', renameWebhookController);
+authenticatedRouter.delete('/:webhookId', deleteWebhookController);
+authenticatedRouter.put('/:webhookId', updateWebhookController);
 authenticatedRouter.get('/get-user-created-webhooks', getUserCreatedWebhooksController);
 authenticatedRouter.get('/:webhookId/events', getWebhookEventsController);
 authenticatedRouter.get('/events/latest', getLatestWebhookEventsController);

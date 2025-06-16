@@ -127,6 +127,72 @@ export const createWebhook = async (
   };
 
 /**
+ * Renames a webhook definition in the database.
+ *
+ * @param webhookId The ID of the webhook to rename.
+ * @param newName The new name for the webhook.
+ * @param clientUserId The ID of the client user renaming the webhook.
+ * @param clientOrganizationId The ID of the client organization.
+ * @returns The updated Webhook.
+ * @throws Error if the webhook is not found or the update fails.
+ */
+export const renameWebhook = async (
+    webhookId: string,
+    newName: string,
+    clientUserId: string,
+    clientOrganizationId: string
+): Promise<Webhook> => {
+    const sql = `
+        UPDATE webhooks
+        SET name = $1, updated_at = NOW()
+        WHERE id = $2 AND creator_client_user_id = $3 AND creator_client_organization_id = $4
+        RETURNING *;
+    `;
+    try {
+        const result = await query<WebhookRecord>(sql, [newName, webhookId, clientUserId, clientOrganizationId]);
+        if (result.rows.length === 0) {
+            console.error("Webhook not found or user does not have permission to rename it.");
+            throw new Error("Webhook not found or user does not have permission to rename it.");
+        }
+        return mapWebhookRecordToWebhook(result.rows[0]);
+    } catch (err) {
+        console.error("Error renaming webhook:", err);
+        throw new Error(`Database error renaming webhook: ${err instanceof Error ? err.message : String(err)}`);
+    }
+};
+
+/**
+ * Deletes a webhook definition from the database.
+ *
+ * @param webhookId The ID of the webhook to delete.
+ * @param clientUserId The ID of the client user deleting the webhook.
+ * @param clientOrganizationId The ID of the client organization.
+ * @returns A boolean indicating whether the deletion was successful.
+ * @throws Error if the webhook is not found or the deletion fails.
+ */
+export const deleteWebhook = async (
+    webhookId: string,
+    clientUserId: string,
+    clientOrganizationId: string
+): Promise<boolean> => {
+    const sql = `
+        DELETE FROM webhooks
+        WHERE id = $1 AND creator_client_user_id = $2 AND creator_client_organization_id = $3;
+    `;
+    try {
+        const result = await query(sql, [webhookId, clientUserId, clientOrganizationId]);
+        if (!result.rowCount) {
+            console.error("Webhook not found or user does not have permission to delete it.");
+            throw new Error("Webhook not found or user does not have permission to delete it.");
+        }
+        return true;
+    } catch (err) {
+        console.error("Error deleting webhook:", err);
+        throw new Error(`Database error deleting webhook: ${err instanceof Error ? err.message : String(err)}`);
+    }
+};
+
+/**
  * Retrieves a webhook definition by its ID.
  *
  * @param id The UUID of the webhook.
@@ -361,5 +427,56 @@ export const getUserCreatedWebhooksService = async (
     } catch (err) {
         console.error("Error retrieving user's created webhooks:", err);
         throw new Error(`Database error retrieving created webhooks: ${err instanceof Error ? err.message : String(err)}`);
+    }
+};
+
+/**
+ * Updates a webhook definition in the database.
+ *
+ * @param webhookId The ID of the webhook to update.
+ * @param updates The data to update.
+ * @param clientUserId The ID of the client user updating the webhook.
+ * @param clientOrganizationId The ID of the client organization.
+ * @returns The updated Webhook.
+ * @throws Error if the webhook is not found or the update fails.
+ */
+export const updateWebhook = async (
+    webhookId: string,
+    updates: Partial<WebhookData>,
+    clientUserId: string,
+    clientOrganizationId: string
+): Promise<Webhook> => {
+    const updateFields = Object.keys(updates);
+    if (updateFields.length === 0) {
+        const webhook = await getWebhookById(webhookId);
+        if (!webhook) {
+            console.error("Webhook not found.");
+            throw new Error("Webhook not found.");
+        }
+        return webhook;
+    }
+
+    const setClauses = updateFields.map((field, index) => `"${field}" = $${index + 1}`).join(', ');
+    const params = updateFields.map(field => updates[field as keyof typeof updates]);
+    
+    params.push(webhookId, clientUserId, clientOrganizationId);
+
+    const sql = `
+        UPDATE webhooks
+        SET ${setClauses}, updated_at = NOW()
+        WHERE id = $${params.length - 2} AND creator_client_user_id = $${params.length - 1} AND creator_client_organization_id = $${params.length}
+        RETURNING *;
+    `;
+
+    try {
+        const result = await query<WebhookRecord>(sql, params);
+        if (result.rows.length === 0) {
+            console.error("Webhook not found or user does not have permission to update it.");
+            throw new Error("Webhook not found or user does not have permission to update it.");
+        }
+        return mapWebhookRecordToWebhook(result.rows[0]);
+    } catch (err) {
+        console.error("Error updating webhook:", err);
+        throw new Error(`Database error updating webhook: ${err instanceof Error ? err.message : String(err)}`);
     }
 };
