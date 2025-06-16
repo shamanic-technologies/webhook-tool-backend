@@ -8,7 +8,8 @@
 import { 
     WebhookStatus, 
     WebhookProviderId, 
-    UtilitySecretType 
+    UtilitySecretType,
+    Webhook
 } from '@agent-base/types';
 
 /**
@@ -20,10 +21,7 @@ export interface WebhookRecord {
     description: string;
     webhook_provider_id: WebhookProviderId;
     subscribed_event_id: string;
-    // required_secrets: UtilitySecretType[]; // Stored as JSONB or TEXT[] in PG
-    // client_user_identification_mapping: Record<UtilitySecretType, string>; // Added (Stored as JSONB in PG)
     conversation_id_identification_mapping: string; // Added (Stored as TEXT in PG)
-    // event_payload_schema: Record<string, unknown>; // Stored as JSONB in PG
     embedding?: number[]; // Assuming numeric vector, adjust if needed
     creator_client_user_id: string; // Added: ID of the user who created this webhook definition
     creator_client_organization_id: string; // Added: ID of the organization who created this webhook definition
@@ -42,7 +40,6 @@ export interface UserWebhookRecord {
     platform_user_id: string; // Added platform user ID
     status: WebhookStatus; // e.g., 'pending', 'active'
     webhook_secret: string; // Unique secret for this webhook link
-    // client_user_identification_hash: string | null; // DEPRECATED - will be removed
     created_at: Date;
     updated_at: Date;
 }
@@ -75,8 +72,17 @@ export interface WebhookAgentLinkRecord {
     agent_id: string; // Identifier for the agent
     created_at: Date;
     updated_at: Date;
-    // client_user_id: string; // Foreign key to user_webhooks
-    // webhook_provider_id: string; // Added to match WebhookAgentLink type and migration
-    // Primary key would likely be a composite key (webhook_id, client_user_id, agent_id)
-    // or have a unique constraint on (webhook_id, client_user_id)
-} 
+}
+
+export function mapWebhookRecordToWebhook(record: WebhookRecord): Webhook {
+    return {
+        id: record.id,
+        name: record.name,
+        description: record.description,
+        webhookProviderId: record.webhook_provider_id,
+        subscribedEventId: record.subscribed_event_id,
+        creatorClientUserId: record.creator_client_user_id,
+        creatorClientOrganizationId: record.creator_client_organization_id,
+        conversationIdIdentificationMapping: record.conversation_id_identification_mapping,
+    };
+}

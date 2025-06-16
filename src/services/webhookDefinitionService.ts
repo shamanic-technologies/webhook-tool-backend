@@ -292,12 +292,19 @@ export const searchWebhooks = async (
                 // 3. Check if linked to an agent (in the context of this user)
                 let linkedAgentId: string | undefined = undefined;
                 let isLinkedToAgent = false; // Default to false, will become true if an agent is linked
+                let urlToInput: string | undefined = undefined;
+
                 // Ensure userLink and its platformUserId are valid before proceeding
                 if (userLink && userLink.platformUserId) { 
                     const agentLinkRecord = await agentWebhookLinkService.findAgentLink(record.id, clientUserId, clientOrganizationId);
                     if (agentLinkRecord && agentLinkRecord.agentId) {
                         linkedAgentId = agentLinkRecord.agentId;
                         isLinkedToAgent = true; // Set to true if agent is linked
+                    }
+                    try {
+                        urlToInput = await constructWebhookTargetUrl(await mapWebhookRecordToWebhook(record), clientUserId, clientOrganizationId);
+                    } catch (e) {
+                        // If the URL cannot be constructed, it's okay to leave it undefined.
                     }
                 }
 
@@ -312,6 +319,7 @@ export const searchWebhooks = async (
                     currentUserWebhookStatus, // Populate with actual status from userLink
                     isLinkedToAgent,          // Populate with explicit boolean
                     linkedAgentId,            // Populate with agent ID or undefined
+                    urlToInput,
                 };
             })
         );
