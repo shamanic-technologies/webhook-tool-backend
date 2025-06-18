@@ -16,7 +16,6 @@ import {
     MinimalInternalCredentials,
     sanitizeConversationId
 } from '@agent-base/types';
-// @ts-ignore
 import { Message } from 'ai'; // Vercel AI SDK Message type
 import { randomUUID } from 'crypto'; // Use built-in crypto module for UUIDs
 
@@ -191,8 +190,11 @@ export const processResolvedWebhook = async (params: ProcessWebhookParams): Prom
         // --- 4. Prepare and Trigger Agent Run ---
         // Construct a user message containing the webhook payload details.
         const messageContent = `
-        This is an automated message from ${webhookProviderId}/${subscribedEventId}. You received this webhook event with the following payload:
+        This is an automated message from ${webhookProviderId}/${subscribedEventId}.
+        You received this webhook event with the following payload:
         ${JSON.stringify(payload, null, 2)}
+        If you need more context about the event (like an incoming WhatsApp without history),
+        you may want to retrieve past tool calls and past webhook events to get the relevant context.
         `;
 
         const webhookMessage: Message = {
