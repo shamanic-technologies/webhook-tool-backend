@@ -1,5 +1,6 @@
 import express, { Express, Request, Response, NextFunction } from 'express';
 import dotenv from 'dotenv';
+import cors from 'cors';
 import crypto from 'crypto'; // Import crypto for key generation
 import fs from 'fs'; // Added for writing temp credentials file
 import path from 'path'; // Added for constructing temp file path
@@ -119,6 +120,7 @@ const app: Express = express();
 const port = process.env.PORT || 3001;
 
 // --- Middleware ---
+app.use(cors()); // Enable CORS for all routes
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 

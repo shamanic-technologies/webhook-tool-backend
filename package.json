@@ -31,7 +31,8 @@
     "@agent-base/api-client": "^0.44.0",
     "@agent-base/secret-client": "^0.14.0",
     "@agent-base/types": "^0.44.0",
-    "ai": "^4.3.15",
+    "ai": "^4.3.15",  
+    "cors": "^2.8.5",
     "dotenv": "^16.5.0",
     "express": "^4.21.2",
     "openai": "^4.98.0",
@@ -42,6 +43,7 @@
   },
   "devDependencies": {
     "@redocly/cli": "^1.34.2",
+    "@types/cors": "^2.8.17",
     "@types/express": "^4.17.21",
     "@types/node": "^20.17.31",
     "@types/pg": "^8.11.14",
